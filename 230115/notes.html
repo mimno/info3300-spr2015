@@ -1,0 +1,73 @@
+<html>
+<head>
+	<link href='http://fonts.googleapis.com/css?family=Open+Sans' rel='stylesheet' type='text/css'>
+	<style>body { font-family: "Open Sans"; } div { margin: 30px; }</style>
+</head>
+<body>
+	<h3>Notes for Friday, Jan. 24. What's different about Javascript?</h3>
+	<div>
+		At the end of each class I'm going to post a "prompt" for the next class. This one will be highlighted at the end of our first class, and will form the basis for our discussion on Friday. As we build up complexity during the semester, these will start to look more like templates for interesting mini-projects.
+	</div>
+
+	<div>
+		This class will work almost entirely in Javascript. There are several idioms in Javascript that we'll use a lot, but that you may not be familiar with from other languages. Don't use any additional libraries, we want to do things the hard way first!
+	</div>
+	<div>
+		Javascript has a simple type system. Use the <tt>typeof</tt> function to find the type of the following: 
+		<ul>
+			<li id="three">3 </li>
+			<li id="pi">3.14159 </li>
+			<li id="quoted3">"3" </li>
+			<li id="true">true </li>
+			<li id="quotedtrue">"true" </li>
+		</ul>
+		<script>
+		document.getElementById("three").innerHTML += typeof(3);
+		document.getElementById("pi").innerHTML += typeof(3.14159);
+		document.getElementById("quoted3").innerHTML += typeof("3");
+		document.getElementById("true").innerHTML += typeof(true);
+		document.getElementById("quotedtrue").innerHTML += typeof("true");
+		</script>
+	</div>
+	<div>
+		Javascript is object-oriented, but in a simpler way than you might be used to. An object is an unordered set of key/value pairs.
+		Write an object literal with variables "x" and "y", and values of your choice.
+		Keys can be strings, values can be any type.
+		<span id="oo"></span>
+		<script>
+		var testObject = { x: 3, y: { blah: 7} };
+		console.log(testObject);
+		document.getElementById("oo").innerHTML = testObject.y;
+		</script>
+	</div>
+	<div>
+		Javascript is functional, which means that functions are values. There are two different ways of defining functions.
+		<span id="functions"></span>
+		<script>
+		function plusOne (x) { return x + 1; }
+		var plusOneAlternate = function (x) { return x + 1; };
+		document.getElementById("functions").innerHTML = plusOne(151);
+
+		// Note the difference:
+		console.log(typeof(plusOne(3)));
+		console.log(typeof(plusOne));
+		
+		// A function can be a value, and has a type
+		
+		</script>
+	</div>
+	<div>
+		Some functions take other functions as inputs. Think of this as passing a "behavior" to a function. Other functions return functions. Think of these as "function factories".
+		<span id="func_as_input"></span>
+		<span id="func_as_output"></span>
+		<script>
+		var operate = function(x, operator) { return operator(x); }
+		document.getElementById("func_as_input").innerHTML = operate(7, plusOne);
+		
+		var plusGenerator = function(offset) { return function(x) { return x + offset } };
+		var addTwo = plusGenerator(2);
+		document.getElementById("func_as_output").innerHTML = addTwo(15);
+		</script>
+	</div>
+</body>
+</html>
