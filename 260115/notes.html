@@ -1,0 +1,72 @@
+<html>
+<head>
+	<link href='http://fonts.googleapis.com/css?family=Open+Sans' rel='stylesheet' type='text/css'>
+	<style>body { font-family: "Open Sans"; } div { margin: 30px; }</style>
+</head>
+<body>
+	<h3>Notes for Monday, Jan. 26. Objects</h3>
+
+	<div>
+		Last time we looked at functions. Now we're going to look at how javascript handles objects.
+	</div>
+	<div>
+		Creating an object literal. A great introduction to object literals is the <a href="http://www.json.org/">JSON</a> page. JSON is designed to be valid Javascript, but a very restricted subset. You can't write functions. All keys must be in double quotes.
+		<script>
+		// This statement sets the value of the variable "widget" to an object literal. The object has two attributes, a string and a function.
+		var widget = { "foo" : "Snow", 
+		 				"sayHi" : function () { console.log("Hi!"); } };
+		</script>
+	</div>
+	<div>
+		How do we deal with objects from other code? How do we know what the properties of an object are?
+		<script>
+		// We can list the properties of an object:
+		Object.getOwnPropertyNames(widget);
+
+		// Listing properties tells us something about how arrays are implemented:
+		Object.getOwnPropertyNames([1, 2, "blue"]);
+		</script>
+	</div>
+	<div>
+		We refer to the properties of an object from a function inside that object using the keyword <tt>this</tt>.
+		<script>
+var thisWidget = { "foo" : "Snow", 
+	 		"sayHi" : function () { console.log(this.foo); } };
+		</script>
+	</div>
+	<div>
+		What are some ways we create objects?
+		<script>
+		// This function will return an object literal. Calling it multiple times will return different objects that have the same property names and values.
+		var widgetGenerator = function () {
+			return { "foo" : "Snow", 
+	 		"sayHi" : function () { console.log(this.foo); } };
+		};
+		
+		// We can also define something that looks more like the constructor methods you might be used to from Java.
+		// This is just a function like any other. It refers to a variable called "this".
+		var Widget = function () {
+			this.foo = "Snow";
+			this.sayHi = function () { console.log(this.foo); };
+		};
+		
+		// [Note that outside the context of a function, the variable "this" is a
+		//  "Window" object. This statement should produce "undefined":
+		this.foo;
+
+		// If we call the Widget() function directly, like this:
+		var widget = Widget();
+		// ... then Javascript interprets the "this" variable in the function as referring
+		//  to the Window object. "this.foo" should now be a string.
+
+		// If we add the "new" keyword before the function, this acts more like 
+		//  the constructor functions you might be used to in languages like Java.
+		// Javascript first creates an empty object {}, then calls the function
+		//  with "this" set to that object. When the function ends, the return 
+		//  value is that object, which in this case will now contain two properties.
+		var widget = new Widget();
+		
+		</script>
+	</div>
+</body>
+</html>
