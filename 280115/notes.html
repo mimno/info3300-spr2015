@@ -1,0 +1,68 @@
+<html>
+<head>
+	<link href='http://fonts.googleapis.com/css?family=Open+Sans' rel='stylesheet' type='text/css'>
+	<style>
+	body { font-family: "Open Sans"; } div { margin: 30px; }
+	 #d1 { font-size: 42px;}
+	 /* Let's put a border around the SVG element so we can see where it is */
+	 svg { border: solid black 1px;}
+	 /* Here's how we set the appearence of a circle */
+	 circle { fill: red; stroke: red; stroke-width: 4;}
+	</style>
+</head>
+<body>
+	<h3>Notes for Wednesday, Jan. 28. HTML Document Object Model</h3>
+
+<!-- Here's a standard HTML div element with an ID and a class -->
+<div id="d1" class="header">Hello!</div>
+
+
+<!-- Here are two types of form inputs. -->
+<input id="t1" type="text" value="Hello!"/>
+
+
+	<div>
+		We will be using Javascript to manipulate element of the page. 
+	</div>
+	<div>
+		1. Text elements, like the "Hello!" above.
+		<script>
+		// Some properties act like variables. We can assign values to them directly
+		document.getElementById("d1").innerHTML = "42";
+		// Some properties are attributes of the element itself, others are included in the "style" object
+		// In CSS, this would be { font-weight: bold }
+		//  (dash instead of camelCase, values do not need quotes)
+		document.getElementById("d1").style.fontWeight = "bold";
+		</script>
+	</div>
+	<div>
+		2. A first look at SVG, and an interactive form element.
+		<!-- Here's an SVG canvas element. Note that in this file it looks like the <div> above. -->
+			<input id="s1" type="range" min="0" max="100" value="30"/>
+		<svg height="200" width="200">
+		  <!-- Visual elements are represented by tags, which have attributes -->
+		  <circle cx="100" cy="100" r="10" id="c1"></circle>
+		</svg>
+		
+		<script>
+		// SVG properties can't be directly set as if they were variables. We need the special setAttribute() function.
+		// Here we set the size of the circle from the initial value of the slider.
+		document.getElementById("c1").setAttribute("r", document.getElementById("s1").value);
+		
+		// Now let's make the slider control the size of the circle.
+		// First we'll grab a reference to the slider element.
+		var slider = document.getElementById("s1");
+		// Like most elements, the slider has a lot of properties that start with "on..." These are variables whose value should be a function.
+		// The "onchange" function will be called when the user releases the slider.
+		// The "oninput" function is called each time the user moves the slider, but doensn't necessarily release it.
+		slider.oninput = function() {
+			var circle = document.getElementById("c1");
+			circle.setAttribute("r", slider.value);
+		};
+		
+		// Question: what is the variable "this" bound to when the oninput function is called? Can we change "slider.value" to something else?
+		
+		</script>
+	</div>
+</body>
+</html>
