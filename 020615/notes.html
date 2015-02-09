@@ -1,0 +1,71 @@
+<html>
+<head>
+	<link href='http://fonts.googleapis.com/css?family=Open+Sans' rel='stylesheet' type='text/css'>
+	<script src="http://d3js.org/d3.v3.min.js" charset="utf-8"></script>
+	<style>body { font-family: "Open Sans"; } div { margin: 30px; }</style>
+</head>
+<body>
+	<h3>Prompt for Friday, Feb 6. D3 scales, data binding</h3>
+
+<!-- Here's an SVG canvas element. Note that in this file it looks like the <div> above. -->
+<svg height="200" width="200">
+  <!-- Visual elements are represented by tags, which have attributes -->
+  <circle />
+  <circle />
+  <circle />
+</svg>
+
+	<div>
+		
+	</div>
+	<div>
+		1. After we have selected a set of elements, D3 gives us the ability to set an attribute of each element based on a function. On Wednesday we saw an example that used only the index of the element, and we were wondering how we would use the other parameter. Where does that value come from, and what can we do with it? 
+		<script>
+		// Data in the form of an array of objects with named values. 
+		//  These are adapted from http://en.wikipedia.org/wiki/Iris_flower_data_set
+		var irises = [
+		  {length: 1.4, width: 0.1},
+		  {length: 1.4, width: 0.2},
+		  {length: 1.3, width: 0.2}
+		];
+		
+		var svg = d3.select("svg");
+		
+		var xScale = d3.scale.linear()
+		.domain([0, 2])
+		.range([0, 200]);
+
+		var yScale = d3.scale.linear()
+		.domain([0, 1])
+		.range([200, 0]);
+		
+		var circles = svg.selectAll("circle")
+		.data(irises)
+		.attr("r", 10)
+		.attr("cx", function (iris, i) {
+			return xScale(iris.length);
+		})
+		.attr("cy", function (iris, i) {
+			return yScale(iris.width);
+		});
+		
+		
+		/*
+		irises.forEach(function (iris) {
+			svg.append("circle")
+			.attr("r", 10)
+			.attr("cx", xScale(iris.length))
+			.attr("cy", yScale(iris.width));
+		});
+		*/
+		
+		
+		</script>
+	</div>
+	<div>
+		2. Data doesn't usually come to us as pixel offsets or colors or circle radii. How can we create scales that map between inputs and visual outputs?
+		<script>
+		</script>
+	</div>
+</body>
+</html>

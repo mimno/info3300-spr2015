@@ -1,0 +1,30 @@
+<html>
+<head>
+	<link href='http://fonts.googleapis.com/css?family=Open+Sans' rel='stylesheet' type='text/css'>
+<!-- Load the d3 library. -->
+<script src="http://d3js.org/d3.v3.min.js" charset="utf-8"></script>
+<style>
+/* put a border around the svg element so we can see the coordinate system better. */
+body { font-family: "Open Sans"; } div { margin: 30px; }
+svg { border: solid black 1px; }
+</style>
+</head>
+<body>
+
+<h3>Prompt for Wednesday, Feb 11. More practice with scales and data binding. Bayesian statistics.</h3>
+
+<!-- We'll put our estimate of conditional probabilities here -->
+<div>Infected, tests positive: <span id="truepos"></span></div>
+<div>Not infected, tests positive: <span id="falsepos"></span></div>
+<div>Infected, tests negative: <span id="trueneg"></span></div>
+<div>Not infected, tests negative: <span id="falseneg"></span></div>
+
+<!-- The SVG element will go in here -->
+<div id="canvas"></div>
+
+<script>
+
+</script>
+
+</body>
+</html>
