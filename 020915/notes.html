@@ -1,0 +1,102 @@
+<html>
+<head>
+	<link href='http://fonts.googleapis.com/css?family=Open+Sans' rel='stylesheet' type='text/css'>
+<!-- Load the d3 library. -->
+<script src="http://d3js.org/d3.v3.min.js" charset="utf-8"></script>
+<style>
+/* put a border around the svg element so we can see the coordinate system better. */
+body { font-family: "Open Sans"; } div { margin: 30px; }
+svg { border: solid black 1px; }
+.inside { fill: red; }
+</style>
+</head>
+<body>
+
+<h3>Notes for Monday, Feb 9. Practice with scales and data binding. Estimating &pi;.</h3>
+
+<p>The area of a unit circle (ie with radius 1) is &pi;. We can inscribe that circle inside a two-by-two square. If we then sample random points from that two-by-two square by picking random, independent x and y coordinates, the probability that a point will fall inside the circle is &pi;/4.</p>
+
+<!-- We'll put our estimate of pi here -->
+<div id="pi"></div>
+
+<!-- The SVG element will go in here -->
+<div id="canvas"></div>
+
+<script>
+
+// The quality of our approximation will depend on the number of samples.
+// Try different values. How many do you need to reliably get answers
+//  within 3.12 to 3.16?
+var numSamples = 1000;
+
+// Create an empty array
+var samples = new Array(numSamples);
+
+// Fill each array element with an object containing
+//  two random values between -1 and 1, which we will
+//  use as x, y coordinates
+for (var i = 0; i < numSamples; i++) {
+	samples[i] = { x: 2 * Math.random() - 1,
+		y: 2 * Math.random() - 1 };
+}
+
+// Create a selection containing the div above, and
+//   add an SVG element to it.
+var div = d3.select("#canvas");
+var svg = div.append("svg")
+  .attr("height", 200)
+  .attr("width", 200);
+
+// Create linear scales for our -1 to 1 box.
+var xScale = d3.scale.linear()
+  .domain([-1, 1]).range([0,200]);
+var yScale = d3.scale.linear()
+  .domain([-1, 1]).range([200,0]);
+
+// Create circles. The following sequence of functions is a 
+//  common d3 idiom. Execute each step in the javascript console
+//  to see what each function does.
+var circles = svg.selectAll("circle") // empty selection
+  .data(samples)  // selection has size 1000, but elements are "undefined"
+  .enter()        // selection now has elements: objects that have __data__ attributes containing the x and y coordinates of our points.
+  .append("circle") // selection now contains "circle" tag elements that still have __data__ attributes
+  .attr("cx", function (d, i) {
+	  return xScale(d.x);
+  })
+  .attr("cy", function (d, i) {
+	  return yScale(d.y);
+  })
+  .attr("r", 3)
+  .style("opacity", 0.5)
+  .attr("class", function (d, i) {
+	  // Set a special class for points inside the circle.
+	  // We could write this with Math.pow() and Math.sqrt(), 
+	  //  but I like to avoid special functions if I can.
+	  if (d.x * d.x + d.y * d.y < 1.0) {
+		  return "inside";
+	  }
+	  else {
+		  return "outside";
+	  }
+  });
+
+// We can select by class. Note that a D3 selection is an
+//  array, and therefore has a .length property, but since D3 
+//  implements selections as an array inside an array, we 
+//  really want selection[0].length. The size() function does the same
+//  thing, without having to go inside the array.
+var numInside = d3.selectAll(".inside").size();
+d3.select("#pi").text(4.0 * numInside / numSamples);
+
+</script>
+
+</body>
+</html>
+
+
+
+
+
+
+
+

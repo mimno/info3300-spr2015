@@ -1,0 +1,135 @@
+<html>
+<head>
+	<link href='http://fonts.googleapis.com/css?family=Open+Sans' rel='stylesheet' type='text/css'>
+<!-- Load the d3 library. -->
+<script src="http://d3js.org/d3.v3.min.js" charset="utf-8"></script>
+<style>
+/* put a border around the svg element so we can see the coordinate system better. */
+body { font-family: "Open Sans"; } div { margin: 30px; }
+svg { border: solid black 1px; }
+</style>
+</head>
+<body>
+
+<h3>Notes for Wednesday, Feb 11. More practice with scales and data binding. Bayesian statistics.</h3>
+
+<p>Last time we mapped a 2-dimensional space to two events: inside a circle and outside. We used the frequency of those two events to estimate &pi;. Today we'll do something similar, but with four regions. We'll use the x and y coordinates to make two distinct choices: first, whether a patient actually has a condition, and second, given their actual status, what the test returns.</p>
+
+<p>In the &pi; and Newton-Pepys simulations, we were using sampling to approximate a difficult computation. Here the computation using Bayes' rule is simple, but might not be intuitive. Mapping each of these four events into a visual space helps to explain the meaning of these numbers.</p>
+
+<!-- We'll put our estimate of conditional probabilities here -->
+<ul>
+<li>Infected, tests positive: <span id="truepos"></span></li>
+<li>Infected, tests negative: <span id="falseneg"></span></li>
+<li>Not infected, tests positive: <span id="falsepos"></span></li>
+<li>Not infected, tests negative: <span id="trueneg"></span></li>
+</ul>
+
+<p>Since the total area of the square is one and there is a uniform probability of dropping a point on any part of it, we can think of certain probabilities as exactly equivalent to area. P(infected) is the area of the rectangle to the left of the infected/not-infected cutoff. The joint probability P(positive, infected) is the area of the tall, skinny rectangle on the bottom left. The conditional probability P(positive|infected) is the joint probability <i>divided by</i> the area of the "infected" rectangle. Bayes' rule tells us that the "opposite" conditional probability P(infected|positive) is the area of the tall, skinny bottom-left rectangle divided by the L-shaped region containing all the positive points (true and false).</p>
+
+<!-- The SVG element will go in here -->
+<div id="canvas"></div>
+
+<script>
+var population = [];
+var populationSize = 150;
+
+// Last time we created an array with lots of empty elements, this time we'll 
+//  create an empty array and add elements. Both ways work.
+for (var i = 0; i < populationSize; i++) {
+	population.push({ x: Math.random(),
+		y: Math.random() });
+}
+
+var svg = d3.select("#canvas").append("svg")
+.attr("width", 400).attr("height", 400);
+
+var xScale = d3.scale.linear()
+.domain([0,1]).range([0,400]);
+
+var yScale = d3.scale.linear()
+.domain([0,1]).range([400,0]);
+
+// Here's the d3 selectAll/data/enter/append sequence again.
+// Remind yourself what happens at each stage.
+var circles = svg.selectAll("circle")
+.data(population)
+.enter()
+.append("circle");
+
+// The base rate
+var probabilityInfected = 0.20;
+
+// Conditional probabilities
+var positiveGivenInfected = 0.9;
+var positiveGivenNotInfected = 0.05
+
+// We'll use the x coordinate to decide if a patient is infected.
+// If the point is to the left of the imaginary line, it has the condition.
+// The probability that a uniform [0,1] random variable being less than 
+//  a certain number x is x.
+var isInfected = function (patient) {
+	return patient.x < probabilityInfected;
+};
+
+// We'll use the y coordinate to decide if the patient tests positive.
+// The "critical value" will be different because the conditional probability
+//  is different.
+var isPositive = function (patient) {
+	if (isInfected(patient)) {
+		return patient.y < positiveGivenInfected;
+	}
+	else {
+		return patient.y < positiveGivenNotInfected;
+	}
+}
+
+circles.attr("r", 5)
+.attr("cx", function (d) {
+	return xScale(d.x);
+})
+.attr("cy", function (d) {
+	return yScale(d.y);
+})
+.attr("opacity", 0.7)
+.attr("stroke-width", 3)
+.attr("fill", function (d) {
+	if (isInfected(d)) {
+		return "red";
+	}
+})
+.attr("stroke", function (d) {
+	if (isPositive(d)) {
+		return "orange";
+	}
+});
+
+var infected = population.filter(isInfected);
+var notInfected = population.filter(function (patient) {
+	return ! isInfected(patient);
+});
+
+var infectedPositive = infected.filter(isPositive);
+d3.select("#truepos").text(infectedPositive.length);
+d3.select("#falseneg").text(infected.length - infectedPositive.length);
+
+var notInfectedPositive = notInfected.filter(isPositive);
+d3.select("#falsepos").text(notInfectedPositive.length);
+d3.select("#trueneg").text(notInfected.length - notInfectedPositive.length);
+
+
+
+</script>
+
+</body>
+</html>
+
+
+
+
+
+
+
+
+
+
