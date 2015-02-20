@@ -1,0 +1,163 @@
+<html>
+<head>
+	<link href='http://fonts.googleapis.com/css?family=Open+Sans' rel='stylesheet' type='text/css'>
+<!-- Load the d3 library. -->
+<script src="http://d3js.org/d3.v3.min.js" charset="utf-8"></script>
+<style>
+/* put a border around the svg element so we can see the coordinate system better. */
+body { font-family: "Open Sans"; } div { margin: 30px; }
+svg { border: solid black 1px; }
+</style>
+</head>
+<body>
+
+<h3>Notes for Friday, Feb 20. Linear models, line and area graphs.</h3>
+
+<p>In class we looked at Elijah Meeks' somewhat polemical <a href="https://twitter.com/elijah_meeks/status/468419701677113344">Venn diagram</a> and 
+	Heer, Bostock and Ogievetsky's <a href="http://queue.acm.org/detail.cfm?id=1805128">Tour through the Visualization Zoo</a>.</p>
+
+<!-- The SVG element will go in here -->
+<div id="canvas"></div>
+
+<script>
+
+var svg = d3.select("#canvas").append("svg").attr("height", 300).attr("width", 400);
+// Pull the graphics away from the edge with this parameter
+var padding = 30;
+
+// Make some random data points.
+var observations = [];
+
+// Vary this parameter, and see how it affects the plot.
+var numObservations = 200;
+
+// Get a function that, when called, returns samples from a standard normal (aka Gaussian) distribution.
+// This is the "function returns a function" pattern.
+var randomNormal = d3.random.normal();
+
+// At the console, run "randomNormal()" a few times. How are these numbers different from Math.random()?
+
+for (var i = 0; i < numObservations; i++) {
+	var x = Math.random();
+	// We'll sample some x,y coordinate pairs as we've done before, 
+	//  but this time they're not independent. What does this look like?
+	observations.push({
+		x: x, // Why didn't I just say x: Math.random()?
+		y: x * 2.5 + randomNormal() // y has two parts, a "systematic" part (x * 2.5) and a "stochastic" part (the random normal variable)
+	});
+	// This is the simplest relationship between x and y: a linear scaling factor plus some noise.
+	// Try some others:
+	//   y: x * x * 2.5 + randomNormal()
+	//   y: Math.cos(x * 2 * Math.PI) * 2.5 + randomNormal()
+	//   
+	//  Why am I multiplying a function of x by 2.5? What are typical values of randomNormal()?
+	//  What happens if I keep x the same and multiply randomNormal() by 2.5 instead?
+}
+
+// This you've seen before.
+var xScale = d3.scale.linear().domain([0,1])
+.range([padding, 400 - padding]);
+
+// This you might not have. I'm asking D3 to give me a two-element array containing
+//  the min and max values of the array, after each element has been passed through the 
+//  supplied function (which in this case is just there to pick out the y value).
+var yScale = d3.scale.linear()
+.domain(d3.extent(observations, function(d) {return d.y;}))
+.range([300 - padding, padding]);
+
+// Again, more circles.
+var circles = svg.selectAll().data(observations).enter().append("circle");
+circles.attr("cx", function(d) { return xScale(d.x); })
+	.attr("cy", function(d) { return yScale(d.y); })
+.attr("r", 5).attr("opacity", 0.3);
+
+// Now let's define eleven vertical "stripes" of the data.
+// The size of a stripe is determined by this parameter:
+var bandwidth = 0.1;
+// What is the effect of the bandwidth? Can stripes overlap?
+//  What effect does a larger or smaller bandwidth have on the plot?
+
+// Define an array of "steps", each of which will be the middle of a stripe.
+// Play around with this function so you know what the arguments do. 
+// What happens if you leave off one or two of them?
+var steps = d3.range(0, 1.1, 0.1);
+
+// Calculate summary statistics for each stripe.
+// (Remember how "map" works -- we're going to create a new array, 
+//  the same length as "steps")
+var localStats = steps.map(function (step) {
+	
+	// What does this do?
+	var neighborhood = observations.filter(function (d) {
+		return Math.abs(d.x - step) < bandwidth;
+	});
+	// Calculate some statistics...
+	// D3 has some useful functions for lists of numbers
+	var mean = d3.mean(neighborhood, function(d) {
+		return d.y;
+	});
+	// Standard deviation is the square root of the average squared 
+	//  difference between a random variable and the mean of that variable
+	var sd = Math.sqrt( 
+		d3.sum(neighborhood, function (d) {
+			return (d.y - mean) * (d.y - mean);
+		}) / (neighborhood.length - 1.0) // the -1 makes this the "unbiased" estimator
+	);
+	// Do you see why I saved "mean" as a variable?
+	
+	// We're inside a "map" call, so we have to return something for this step.
+	return { x: step, mean: mean, sd: sd };
+});
+
+// Plot local mean and standard deviations
+
+// Our goal is to show how the local mean of each stripe
+// changes as we move the "sliding window" across the data.
+
+// An SVG <path> is a good tool. We only want one <path> for our data, 
+//  with one line segment connecting each stripe. That means our usual
+//  pattern of passing a data array to a selection through the "data()" 
+//  function doesn't really apply.
+
+// Instead we'll just directly create a <path>. D3 provides a useful
+//  tool for constructing the "d" element of the <path>.
+
+// This is the "function returns a function" pattern again.
+// The function line() will take an array and convert each 
+//  element of that array into an x value and a y value. It will
+//  then return the <path> command that draws line segments between
+//  each consecutive pair of points.
+var line = d3.svg.line()
+ // Map x to the x coordinate, scaled from logical coordinates to pixel coordinates
+.x(function (d) { return xScale(d.x); })
+ // Do the same thing to map our mean value for the stripe to pixel coordinates
+.y(function (d) { return yScale(d.mean); });
+
+// Now create the <path>
+svg.append("path").attr("d", line(localStats))
+.style("fill", "none").style("stroke", "black");
+
+// Let's do the same thing for the "confidence region", which is
+//  one standard deviation above and below the mean.
+// Think of "line" as a one-way trip, and "area" as a round trip.
+//  It goes through the data array, creating x,y pairs as before, but
+//  then goes backwards to the beginning. The x values will be the same,
+//  but the y values will be different.
+var area = d3.svg.area() // note the change of function, line to area
+.x(function (d) { return xScale(d.x); })
+.y(function (d) { return yScale(d.mean + d.sd); })  // set the "going out" y values
+.y0(function (d) { return yScale(d.mean - d.sd); }); // set the "coming back" y values
+
+svg.append("path").attr("d", area(localStats))
+.style("opacity", "0.3");
+
+</script>
+
+</body>
+</html>
+
+
+
+
+
+
