@@ -1,0 +1,58 @@
+<html>
+<head>
+	<link href='http://fonts.googleapis.com/css?family=Open+Sans' rel='stylesheet' type='text/css'>
+<!-- Load the d3 library. -->
+<script src="http://d3js.org/d3.v3.min.js" charset="utf-8"></script>
+<style>
+/* put a border around the svg element so we can see the coordinate system better. */
+body { font-family: "Open Sans"; } div { margin: 30px; }
+svg { border: solid black 1px; }
+/* The default styles for axis elements stink. What should they be? */
+.axis path {}
+.axis line {}
+</style>
+</head>
+<body>
+
+<h3>Prompt for Friday, Feb 20. Linear models, line and area graphs.</h3>
+
+<!-- The SVG element will go in here -->
+<div id="canvas"></div>
+
+<script>
+
+var svg = d3.select("#canvas").append("svg").attr("height", 300).attr("width", 400);
+var padding = 30;
+
+var observations = [];
+var numObservations = 200;
+
+var randomNormal = d3.random.normal();
+
+for (var i = 0; i < numObservations; i++) {
+	var x = Math.random();
+	observations.push({ x: x, y: Math.cos(x * Math.PI) * 2.5 + randomNormal() });
+}
+
+var xScale = d3.scale.linear().domain([0,1]).range([padding, 400 - padding]);
+var yScale = d3.scale.linear()
+.domain(d3.extent(observations, function(d) {return d.y;}))
+.range([300 - padding, padding]);
+
+var circles = svg.selectAll().data(observations).enter().append("circle");
+circles.attr("cx", function(d) { return xScale(d.x); })
+	.attr("cy", function(d) { return yScale(d.y); })
+.attr("r", 5).attr("opacity", 0.3);
+	
+var steps = d3.range(0, 1.1, 0.1);
+var localStats = steps.map(function (step) {
+	var neighborhood = observations.filter(function (d) { return Math.abs(d.x - step) < 0.2; });
+	// Calculate some statistics...
+});
+
+// Plot local mean and standard deviations
+
+</script>
+
+</body>
+</html>
