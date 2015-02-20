@@ -31,7 +31,7 @@ var randomNormal = d3.random.normal();
 
 for (var i = 0; i < numObservations; i++) {
 	var x = Math.random();
-	observations.push({ x: x, y: Math.cos(x * Math.PI) * 2.5 + randomNormal() });
+	observations.push({ x: x, y: x * 2.5 + randomNormal() });
 }
 
 var xScale = d3.scale.linear().domain([0,1]).range([padding, 400 - padding]);
