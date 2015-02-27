@@ -1,0 +1,152 @@
+<html>
+<head>
+	<link href='http://fonts.googleapis.com/css?family=Open+Sans' rel='stylesheet' type='text/css'>
+<!-- Load the d3 library. -->
+<script src="http://d3js.org/d3.v3.min.js" charset="utf-8"></script>
+<script src="http://d3js.org/topojson.v1.min.js"></script>
+<style>
+/* put a border around the svg element so we can see the coordinate system better. */
+body { font-family: "Open Sans"; } div { margin: 30px; }
+</style>
+</head>
+<body>
+
+<h3>Notes for Wednesday, Feb 25. Maps with data.</h3>
+
+<div>Data from <a href="http://www.ers.usda.gov/data-products/atlas-of-rural-and-small-town-america/go-to-the-atlas.aspx">USDA Atlas of Rural and Small-Town America</a>.</div>
+
+<div>Here are two maps. One shows the real county-level population change rates, the other shows randomly selected population change rates. How can you tell which one is real? Is it easier to tell the difference in some parts of the map than others? What might explain that difference?</div>
+
+<div>Why is this not an insane thing to do? When we analyze data, we're looking for patterns. That's something our brains are really good at -- often too good. A pattern is only useful if we can tell the difference between the real observed data and randomized versions of that data.</div>
+
+<!-- The SVG element will go in here -->
+<div id="map"></div>
+
+<script>
+
+var width = 480,
+    height = 250;
+
+// Projections have a default width, which is 960 x 500, 
+// and a default center at 480,250. Play with the scale 
+// and translate functions to make bigger and smaller maps,
+// and zoomed-in maps. 
+
+var projection = d3.geo.albersUsa()
+	.scale(500) // 1000 is full size
+	.translate([width / 2, height / 2]); // note the []s
+
+var path = d3.geo.path().projection(projection);
+	
+var counties, states;
+
+var usdaAtlas;
+
+// If the domain and range of a linear scale
+//  has more than two elements, d3 treats the 
+//  scale as a combination of piecewise scales.
+// I wonder what would happen if the middle value 
+//  were outside the two other values?
+var populationScale = d3.scale.linear().domain([-5, 0, 5]).range(["#d8b365", "#f5f5f5", "#5ab4ac"]);
+
+d3.json("us.json", function(error, shapes) {
+	// These functions give us long,lat coordinates
+	counties = topojson.feature(shapes, shapes.objects.counties).features;
+	states = topojson.feature(shapes, shapes.objects.states).features;
+	
+	d3.csv("usda-atlas-people.csv", function (error, rows) {
+		// d3.map converts an array into a key,value map.
+		//  Note that this is NOT a JS object. What's the difference?
+		usdaAtlas = d3.map(rows,
+			function (row) {
+				// We need to be consistent in how we 
+				//  handle FIPS codes that start with 0,
+				//  or we'll lose Alabama, Alaska, ...
+				// We can also use +row.FIPS, but this
+				//  version is more readable.
+				return Number(row.FIPS);
+			}
+		);
+		
+		// Here we define a function that returns a random FIPS
+		var allFIPS = usdaAtlas.keys();
+		function randomFIPS () {
+			// I'm using whitespace to break up what would be
+			//  a long nested string of functions and operations.
+			// But I had to remember not to put a ; after length.
+			return allFIPS [ Math.floor(
+				Math.random() * allFIPS.length
+			) ];
+		}
+		
+		// I'm going to create two SVGs. Here's the first.
+		var svg = d3.select("#map").append("svg")
+	    .attr("width", width)
+	    .attr("height", height);
+		
+		// Create <path> elements for each county.
+		var countyPaths = svg.append("g");
+		countyPaths.selectAll("path").data(counties).enter()
+		.append("path").attr("d", path)
+		.style("fill", function (county) {
+			// set fill based on county attributes
+			var countyData = usdaAtlas.get(county.id);
+			
+			// When we had the bug with 0-initial FIPS codes,
+			//  we were getting fatal errors. Now that we 
+			//  fixed that, we shouldn't technically need this
+			//  check, but it's not a bad idea.
+			if (countyData) {
+				return populationScale(countyData.PopChangeRate1013);
+			}
+			else { return "#ccc"; }
+
+		})
+		.style("stroke", "none");
+	
+		// Add state borders to help us recognize metro areas
+		var statePaths = svg.append("g");
+		statePaths.selectAll("path").data(states).enter()
+		.append("path").attr("d", path)
+		.style("fill", "none").style("stroke", "#ccc");
+
+		// Now let's do the same thing but with random population
+		//  change rates.
+		svg = d3.select("#map").append("svg")
+	    .attr("width", width)
+	    .attr("height", height);
+		
+		countyPaths = svg.append("g");
+		countyPaths.selectAll("path").data(counties).enter()
+		.append("path").attr("d", path)
+		.style("fill", function (county) {
+			// set fill based on some randomly selected
+			//  county's attributes
+			var countyData = usdaAtlas.get(randomFIPS());
+			
+			// This method of randomizing data will only 
+			//  return values that actually occur in some 
+			//  real county. Is there another way we could 
+			//  sample random population change rates?
+			
+			if (countyData) {
+				return populationScale(countyData.PopChangeRate1013);
+			}
+			else { return "#ccc"; }
+
+		})
+		.style("stroke", "none");
+	
+		statePaths = svg.append("g");
+		statePaths.selectAll("path").data(states).enter()
+		.append("path").attr("d", path)
+		.style("fill", "none").style("stroke", "#ccc");
+	
+	});
+	
+});
+
+</script>
+
+</body>
+</html>
