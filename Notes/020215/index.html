@@ -1,0 +1,108 @@
+<html>
+<head>
+	<link href='http://fonts.googleapis.com/css?family=Open+Sans' rel='stylesheet' type='text/css'>
+	<style>
+	body { font-family: "Open Sans"; }
+	div { margin: 30px; }
+	/* SVG styles will go here */
+	svg { border: solid black 1px; }
+	circle { stroke: red; stroke-width: 5; opacity: 0.3; } /* use opacity to make shapes translucent */
+	</style>
+</head>
+<body>
+	<h3>Prompt for Monday, Feb. 2. Arrays, element creation</h3>
+
+	<svg id="canvas" height="200" width="200"></svg>
+	<div>
+		Arrays support many useful behaviors
+		<script>
+		
+		// To create an empty list with a pre-set size
+		var list = new Array(5);
+		
+		// If you type "list", what is the type of the elements?
+		console.log(typeof(list[0]));
+		
+		// You will often need to initialize an array, for example to have 0s in each element.
+		
+		// We can directly assign values to array elements. 
+		list[0] = 7;
+		list[2] = 30;
+		list[4] = 20;
+		// Values don't need to be contiguous. In this example, list[3] is still "undefined"
+		
+		// To add another element onto an array, use "push"
+		list.push(51);
+		// This will change the contents of the array. The return value of "push" is 
+		//  the new size of the array.
+		
+		// Adding multiple elements can by tricky. This code
+		list.push([75, 100]);
+		// will actually add a single element to the end of "list", consisting of
+		//  a two-dimensional array. Passing multiple arguments will do what we expect.
+		list.push(76, 101);
+		
+		// To merge two arrays use concat(). This will create a new array. The
+		//  value returned by concat() will be that new array.
+		list = list.concat([77, 102]);
+		
+		// Array literals give us an easier way to construct a an array when we know all the element values.
+		var radii = [20, 30, 40];
+		
+		// Remember that in Javascript, an array is actually an Object that has  properties corresponding to the indices and a property called "length".
+		// The fact that an object is an array means it also has a number of functions.
+		// Several of these can take the place of c-style control structures.
+		
+		// The forEach() function is similar to a for loop.
+		// We pass in an argument, which is a function that defines a behavior that we want to be carried out on each array element.
+		radii.forEach(function (r) { console.log(r) });
+		
+		// What's the difference between a c-style for loop and a function for loop?
+		// The c-style loop can be executed without having an actual array, but it 
+		//  requires us to know the number of times we want to evaluate the loop.
+		
+		// We often want to know the index of the element we're working on. 
+		// We can get that index by adding a second variable to the arguments of the 
+		//  function we pass to forEach().
+		radii.forEach(function (r, i) { console.log(r + " " + i) });
+		
+		// The name "i" is a good choice, since most people will read it as an array
+		//  index, but there's nothing special about it.
+		radii.forEach(function (r, aLengthyVariableName) { console.log(r + " " + aLengthyVariableName) });
+		
+		// Since forEach() is a function, calling it should return a value.
+		var forResult = radii.forEach(function (r, i) { console.log(r + " " + i) });
+		// But that value is not interesting. We use forEach() when we want something
+		//  to happen in the body of the function.
+		
+		// An alternative is map(), which has similar syntax, but saves the result of
+		//  each per-element function call and returns a list containing all the elements.
+		var mapResult = radii.map(function (r, i) {
+			return r + " " + i;
+		});
+		// Unlike forEach(), that means the function we pass to map() has to return a value.
+		
+		// We don't have to use an anonymous function defined inside the forEach()
+		// statement. If the function is more than a line or two it can be a lot
+		// more readable if we define a function with a name and then pass it in.
+		function makeCircle(r, i) {
+			// We need to tell the browser that SVG tags are SVG, which we do 
+			//  using a namespace.
+			var circle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+			circle.setAttribute("cx", i * 20);
+			circle.setAttribute("cy", i * 30);
+			circle.setAttribute("r", r);
+			
+			// Here we add the new element to a specific element on the page.
+			document.getElementById("canvas").appendChild(circle);
+		}
+		
+		// Now map the elements in the array to visual elements on the page.
+		radii.forEach(makeCircle);
+		
+		// Next time we'll use d3 to do the same thing, but much more easily!
+		
+		</script>
+	</div>
+</body>
+</html>

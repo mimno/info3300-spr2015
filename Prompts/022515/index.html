@@ -1,0 +1,67 @@
+<html>
+<head>
+	<link href='http://fonts.googleapis.com/css?family=Open+Sans' rel='stylesheet' type='text/css'>
+<!-- Load the d3 library. -->
+<script src="http://d3js.org/d3.v3.min.js" charset="utf-8"></script>
+<script src="http://d3js.org/topojson.v1.min.js"></script>
+<style>
+/* put a border around the svg element so we can see the coordinate system better. */
+body { font-family: "Open Sans"; } div { margin: 30px; }
+svg { border: solid black 1px; }
+/* The default styles for axis elements stink. What should they be? */
+</style>
+</head>
+<body>
+
+<h3>Prompt for Wednesday, Feb 25. Maps with data.</h3>
+
+<div>Data from <a href="http://www.ers.usda.gov/data-products/atlas-of-rural-and-small-town-america/go-to-the-atlas.aspx">USDA Atlas of Rural and Small-Town America</a>.</div>
+
+<!-- The SVG element will go in here -->
+<div id="map"></div>
+
+<script>
+
+var width = 960,
+    height = 500;
+
+var projection = d3.geo.albersUsa();
+
+var path = d3.geo.path().projection(projection);
+	
+var svg = d3.select("#map").append("svg")
+    .attr("width", width)
+    .attr("height", height);
+var counties, states;
+
+var usdaAtlas;
+
+var populationScale = d3.scale.linear().domain([-5, 0, 5]).range(["#d8b365", "#f5f5f5", "#5ab4ac"]);
+
+d3.json("us.json", function(error, shapes) {
+	counties = topojson.feature(shapes, shapes.objects.counties).features;
+	states = topojson.feature(shapes, shapes.objects.states).features;
+	
+	d3.csv("usda-atlas-people.csv", function (error, rows) {
+		// what should we do with the CSV data?
+			
+		var countyPaths = svg.append("g");
+		countyPaths.selectAll("path").data(counties).enter()
+		.append("path").attr("d", path)
+		.style("fill", function (county) {
+			// set fill based on county attributes
+		})
+		.style("stroke", "none");
+	
+		var statePaths = svg.append("g");
+		statePaths.selectAll("path").data(states).enter()
+		.append("path").attr("d", path)
+		.style("fill", "none").style("stroke", "#ccc");
+	});
+	
+});
+
+</script>
+
+</body>
+</html>

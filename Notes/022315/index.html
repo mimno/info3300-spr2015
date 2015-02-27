@@ -1,0 +1,109 @@
+<html>
+<head>
+	<link href='http://fonts.googleapis.com/css?family=Open+Sans' rel='stylesheet' type='text/css'>
+<!-- Load the d3 library. -->
+<script src="http://d3js.org/d3.v3.min.js" charset="utf-8"></script>
+<script src="http://d3js.org/topojson.v1.min.js"></script>
+<style>
+/* put a border around the svg element so we can see the coordinate system better. */
+body { font-family: "Open Sans"; } div { margin: 30px; }
+svg { border: solid black 1px; }
+/* The default styles for axis elements stink. What should they be? */
+.axis path {}
+.axis line {}
+</style>
+</head>
+<body>
+
+<h3>Notes for Monday, Feb 23. Maps.</h3>
+
+<div>D3 has many default <a href="https://github.com/mbostock/d3/wiki/Geo-Projections">projections</a>. We also looked at some <a href="http://www.vox.com/2015/2/18/8056325/bad-maps">map failures</a> from Vox.</div>
+
+<!-- The SVG element will go in here -->
+<div id="countryid">[hover over a country to display its ISO-3166 code]</div>
+<div id="map"></div>
+
+<script>
+
+var width = 960,
+    height = 500;
+
+// A projection is like a scale. It takes an argument in the form of a long/lat coordinate
+//  and returns an x,y coordinate.
+// Here are a few common mistakes:
+//   1. The input and output are arrays, not lists of values.
+//    WRONG: projection(-76, 42)
+//    RIGHT: projection([-76, 42])
+//   2. We almost always talk about latitude and longitude, in that order, and
+//     at the same time we always talk about x,y pairs, in that order.
+//    Think about the relationship between those two coordinate systems.
+
+// This projection isn't as familiar as the Mercator, but gives a 
+//  more accurate picture of the relative sizes of Alaska and Brazil (~1:5)
+var projection = d3.geo.equirectangular();
+
+// Create a function that will turn a topoJSON object into the "d" parameter 
+//  of an SVG <path> element, using the projection.
+var path = d3.geo.path().projection(projection);
+	
+var svg = d3.select("#map").append("svg")
+    .attr("width", width)
+    .attr("height", height);
+var g = svg.append("g");
+
+// Save a reference to the data outside the scope of the d3.json() function.
+var worldData;
+
+// Linear scales can take colors as output ranges.
+var blueToRed = d3.scale.linear()
+	.domain([-20, 80]).range(["blue", "red"]);
+		
+d3.json("world-50m.json", function(error, world) {
+	worldData = world;
+	
+	// Use topojson to create an array containing one object per country.
+	var countries = topojson.feature(world, world.objects.countries).features;
+	
+	g.selectAll("path")
+		.data(countries)
+		.enter().append("path")
+		.attr("d", path)
+		.style("fill", function(country) {
+			// The data in the JSON file does not contain country names, only ISO-3166 numeric ids.
+			if (country.id == 840) {
+				return "pink";
+			}
+			else {
+				return "#ccc";
+			}
+		})
+		.style("stroke", "#888")
+		.on("mouseover", function (country) {
+			// When we hover over a country, show the user that country's ISO-3166 id.
+			d3.select("#countryid").text(country.id);
+	 	});
+	
+	// We can also use our projection directly to map from long/lat pairs to pixel coordinates.
+	var ithacaCoords = projection([-76, 42]);
+	
+	svg.append("circle")
+	.attr("cx", ithacaCoords[0])
+	.attr("cy", ithacaCoords[1])
+	.attr("r", 5)
+	.style("fill", blueToRed(18));
+	
+	// Phoenix, AZ is warmer than Ithaca today.
+	var phoenixCoords = projection([-112, 33.5]);
+	
+	svg.append("circle")
+	.attr("cx", phoenixCoords[0])
+	.attr("cy", phoenixCoords[1])
+	.attr("r", 5)
+	.style("fill", blueToRed(66));
+	
+});
+
+</script>
+
+</body>
+</html>

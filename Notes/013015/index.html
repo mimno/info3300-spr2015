@@ -1,0 +1,50 @@
+<html>
+<head>
+	<link href='http://fonts.googleapis.com/css?family=Open+Sans' rel='stylesheet' type='text/css'>
+	<style>
+	body { font-family: "Open Sans"; }
+	div { margin: 30px; }
+	/* SVG styles will go here */
+	svg { border: solid black 1px; }
+	#pl { stroke: red; stroke-width: 5;}
+	#pa { stroke: red; stroke-width: 5;}
+	</style>
+</head>
+<body>
+	<h3>Prompt for Friday, Jan. 30. Scalable Vector Graphics</h3>
+
+	<div>
+		SVG is an XML specification of vector graphics. Visual elements are represented as tags, which have styles and attributes. 
+	</div>
+	<div>We looked at <a href="http://www.huffingtonpost.co.uk/andy-cotgreave/let-your-data-show_b_6561414.html">this visualization</a> of NYC CitiBike ridership data. Look at how the author starts by displaying just seven data points, and ends with around 20,000 data points.</div>
+	<div>
+		1. Polylines. SVG interprets the <tt>points</tt> attribute as a string containing at least one pair of x,y coordinates. Coordinates can be integers or floating point numbers. Commas between coordinates are optional, but helpful for (human) readers. The order of points determines where the line goes and what the shape of the fill looks like. Try reversing the middle two coordinates. 
+		<svg height="400" width="400">
+<polyline id="pl" points="10 10 100,100 10,100 100,10"/>
+		</svg>
+	</div>
+	<div>
+		2. Paths. This is the most complicated SVG element, but also one of the most useful. It contains a tiny programming language. Each command is a single letter followed by (usually) an x,y coordinate. Capital letters represent absolute coordinates; lowercase letters represent offsets from the current position. <tt>M</tt> moves the "pen" to a location. <tt>L</tt> draws a line from the current location. <tt>Z</tt> draws a line to the starting point, so we can close a shape without remembering where we started. See <a href="http://www.w3.org/TR/SVG/paths.html">the full specification</a> for other useful commands, like horizontal and vertical lines, arcs (useful for pie charts), and curves.
+		<svg height="400" width="400">
+<path id="pa" d="M 100,100 L 200,100 200,200 100,200 Z" />
+		</svg>
+	</div>
+	<div>
+		3. Transformations are a useful (but a bit tricky) tool. <a href="https://developer.mozilla.org/en-US/docs/Web/SVG/Tutorial/Basic_Transformations">Here's a reference</a>. Any SVG element can have a <tt>transform</tt> attribute. To apply the same transform on multiple tags nest them inside a <tt>&lt;g&gt;</tt> tag. Use <tt>scale(factor)</tt> to stretch a shape. Use <tt>translate(x,y)</tt> to move a shape. Use <tt>rotate(degrees)</tt> to rotate a shape. Your <tt>transform</tt> attribute can contain more than one of these. The order of operations matters. Guessing what will happen can be difficult. Try several combinations and see what you get.  
+		<svg height="400" width="400">
+			<g transform="translate(100,100) rotate(45)">
+			<rect x="-15" y="-15" width="30" height="30"/>
+			<rect x="-15" y="-15" width="30" height="30" transform="translate(40,0)"/>
+		</g>
+		</svg>
+	</div>
+	<div>
+		4. (Back to Javascript) C-style for loops are available in JS. Don't be afraid to use them! This code block also demonstrates how JS guesses whether <tt>+</tt> means addition or string concatenation.
+	<script>
+	for (var i = 0; i < 10; i++) {
+		console.log("1" + i);
+	}
+	</script>
+</div>
+</body>
+</html>

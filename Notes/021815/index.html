@@ -1,0 +1,87 @@
+<html>
+<head>
+	<link href='http://fonts.googleapis.com/css?family=Open+Sans' rel='stylesheet' type='text/css'>
+<!-- Load the d3 library. -->
+<script src="http://d3js.org/d3.v3.min.js" charset="utf-8"></script>
+<style>
+/* put a border around the svg element so we can see the coordinate system better. */
+body { font-family: "Open Sans"; } div { margin: 30px; }
+svg { border: solid black 1px; }
+/* The default styles for axis elements stink. What should they be? */
+.axis path { fill: none; stroke: #777; }
+.axis line { stroke: #777; }
+</style>
+</head>
+<body>
+
+<h3>Notes for Wednesday, Feb 18. Asynchronous data loading. Axes. Non-linear scales.</h3>
+
+<!-- The SVG element will go in here -->
+<div id="canvas"></div>
+
+<script>
+var languages;
+
+d3.json("wikilang.json", function (error, data) {
+	languages = data;
+
+	var maxSpeakers = d3.max(languages, 
+	function (d) {
+		return d.speakers;
+	});
+
+	var maxArticles = d3.max(languages, 
+	function (d) {
+		return d.articles;
+	});
+
+	var maxUsers = d3.max(languages, 
+	function (d) {
+		return d.users;
+	});
+
+	var svg = d3.select("#canvas").append("svg")
+	.attr("height", 400)
+	.attr("width", 400);
+
+	var xScale = d3.scale.linear().domain([0,maxSpeakers])
+	.range([30, 370]);
+	var yScale = d3.scale.linear().domain([0, maxArticles]).range([370,30]);
+	
+	var radiusScale = d3.scale.sqrt()
+	.domain([0, maxUsers]).range([0, 50]);
+	
+	var xAxis = d3.svg.axis().scale(xScale)
+	.orient("bottom");
+	var yAxis = d3.svg.axis().scale(yScale)
+	.orient("left");
+	
+	svg.append("g").attr("class", "axis")
+	.attr("transform", "translate(0,370)")
+	.call(xAxis);
+	svg.append("g").attr("class", "axis")
+	.attr("transform", "translate(" + 30 + ",0)")
+	.call(yAxis);
+	
+	var contents = svg.append("g");
+	
+	var circles = svg.selectAll("circle").data(languages)
+		.enter().append("circle");
+	
+	circles.attr("cx", function(d) { return xScale(d.speakers) })
+		.attr("cy", function(d) { return yScale(d.articles) })
+		.attr("r", function(d) { return radiusScale(d.users) })
+		.attr("opacity", 0.3);
+		
+		var texts = contents.selectAll("text").data(languages).enter().append("text");
+	
+		texts.attr("x", function(d) { return xScale(d.speakers) })
+		.attr("y", function(d) { return yScale(d.articles) })
+		.text(function(d) { return d.lang; });
+		
+	
+});
+</script>
+
+</body>
+</html>

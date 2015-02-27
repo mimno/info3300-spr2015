@@ -1,0 +1,46 @@
+<html>
+<head>
+	<link href='http://fonts.googleapis.com/css?family=Open+Sans' rel='stylesheet' type='text/css'>
+<!-- Load the d3 library. -->
+<script src="http://d3js.org/d3.v3.min.js" charset="utf-8"></script>
+<script src="http://d3js.org/topojson.v1.min.js"></script>
+<style>
+/* put a border around the svg element so we can see the coordinate system better. */
+body { font-family: "Open Sans"; } div { margin: 30px; }
+svg { border: solid black 1px; }
+/* The default styles for axis elements stink. What should they be? */
+.axis path {}
+.axis line {}
+</style>
+</head>
+<body>
+
+<h3>Prompt for Monday, Feb 23. Maps.</h3>
+
+<!-- The SVG element will go in here -->
+<div id="map"></div>
+
+<script>
+
+var width = 960,
+    height = 500;
+
+var projection = d3.geo.mercator();
+var path = d3.geo.path().projection(projection);
+	
+var svg = d3.select("#map").append("svg")
+    .attr("width", width)
+    .attr("height", height);
+var g = svg.append("g");
+var worldObjects;
+
+d3.json("world-50m.json", function(error, world) {
+	worldObjects = world;
+	
+	
+});
+
+</script>
+
+</body>
+</html>

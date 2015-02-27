@@ -22,7 +22,7 @@
 			<li id="quotedtrue">"true" </li>
 		</ul>
 		<script>
-		// Something like: document.getElementById("ID STRING").innerHTML += typeof(LITERAL VALUE);
+		document.getElementById("three").innerHTML += typeof(3);
 		</script>
 	</div>
 	<div>
@@ -37,6 +37,9 @@
 		Javascript is functional, which means that functions are values. There are two different ways of defining functions.
 		<span id="functions"></span>
 		<script>
+		function plusOne(x) { return x + 1; }
+		
+		var addOneAlternate = function(x) { return x + 1; };
 		</script>
 	</div>
 	<div>
@@ -44,6 +47,13 @@
 		<span id="func_as_input"></span>
 		<span id="func_as_output"></span>
 		<script>
+		var operate = function(x, operator) { return operator(x); }
+		document.getElementById("func_as_input").innerHTML = operate(7, plusOne);
+		
+		var plusGenerator = function(offset) { return function(x) { return x + offset } };
+		var addTwo = plusGenerator(2);
+		document.getElementById("func_as_output").innerHTML = addTwo(15);
+		
 		</script>
 	</div>
 </body>

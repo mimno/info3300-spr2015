@@ -1,0 +1,13 @@
+[
+{ "lang":"Mandarin", "articles":811275, "users":1982682, "speakers":1350000000 },
+{ "lang":"English", "articles":4719303, "users":24065303, "speakers":1200000000 },
+{ "lang":"Spanish", "articles":1156101, "users":3518234, "speakers": 550000000 },
+{ "lang":"Hindi", "articles":117313, "users":157504, "speakers": 450000000 },
+{ "lang":"Arabic", "articles":348797, "users":938033, "speakers": 390000000 },
+{ "lang":"French", "articles":1590510, "users":2111803, "speakers": 274000000 },
+{ "lang":"Waray-Waray", "articles":1259047, "users":22944, "speakers": 3000000 },
+{ "lang":"Swedish", "articles":1955948, "users":421638, "speakers": 9000000 },
+{ "lang":"German", "articles":1812586, "users":2085535, "speakers": 90000000 },
+{ "lang":"Dutch", "articles":1810930, "users":666821, "speakers": 23000000 },
+{ "lang":"Russian", "articles":1190397, "users":1545625, "speakers": 235000000 }
+]

@@ -1,0 +1,86 @@
+<html>
+<head>
+	<link href='http://fonts.googleapis.com/css?family=Open+Sans' rel='stylesheet' type='text/css'>
+	<script src="http://d3js.org/d3.v3.min.js" charset="utf-8"></script>
+	<style>body { font-family: "Open Sans"; } div { margin: 30px; }</style>
+</head>
+<body>
+	<h3>Prompt for Wednesday, Feb. 4. Introduction to D3</h3>
+
+<!-- Here's a standard HTML div element with an ID and a class -->
+<div id="d1" class="header">Hello!</div>
+
+<!-- Here's an SVG canvas element. Note that in this file it looks like the <div> above. -->
+<svg height="200" width="200">
+	<circle cx="20" cy="20" r="20"/>
+	<circle cx="50" cy="20" r="20"/>
+	<circle cx="80" cy="20" r="20"/>
+	<circle cx="110" cy="20" r="20"/>
+  <!-- Visual elements are represented by tags, which have attributes -->
+</svg>
+
+<!-- Here are two types of form inputs. -->
+<input id="t1" type="text" value="Hello!"/>
+
+
+	<div>
+		We'll start by using d3 to select DOM elements, create new elements, and modify the content and appearance of elements. 
+	</div>
+	<div>
+		1. How can we select elements? What is the difference between select() and selectAll()? <a href="https://github.com/mbostock/d3/wiki/Selections">Documentation on d3 selections</a>.
+		<script>
+		// d3.select() returns a data structure that looks like an array
+		var svg = d3.select("svg");
+		
+		// Use the javascript console to look at the difference
+		//  between "circle" and "circles".
+		var circle = d3.select("circle");
+		var circles = d3.selectAll("circle");
+		
+		// What's the difference between a d3 selection and a regular array?
+		var regularArray = [1, 2, 3];
+		// Use the javascript console to get a list of the functions 
+		//  available on "regularArray". What are some functions 
+		//  on "circles" that you don't see on "regularArray"?
+		
+		// Ok, here's one. This is a convenience method for setting
+		//  individual variables in an element's style attribute.
+		circles.style("fill", "blue");
+		circles.style("opacity", 0.3);
+		
+		// This function sets attributes (ie key/value pairs that appear in the tag)
+		circles.attr("r", 10);
+		
+		// attr() can also take a function as a second argument, in the
+		//  style of forEach() and map() on arrays.
+		// Here we're only using the second argument of the function, 
+		//  which I'm calling "i". (Is "i" a special name or just customary? Try something else and see if it still works)
+		//  (if you define a variable "i" outside this loop, will running
+		//   this function change the value of that "i" variable?)
+		circles.attr("r", function(d, i) {
+			return 10 + 10 * i;
+		});
+		
+		// Selections use a CSS-style syntax for defining sets.
+		var div = d3.select(".header");
+		
+		var input = d3.select("#t1");
+		</script>
+	</div>
+	<div>
+		2. How can we create new elements, and set their attributes and styles?
+		<script>
+		// When we created SVG elements in pure JS last class, we had 
+		//  to use a long namespace string to tell the browser that 
+		//  we want an SVG element, not just some random tag called "rect".
+		// D3 makes this easier.
+		var rect = svg.append("rect");
+		rect.attr("x", 100);
+		rect.attr("y", 100);
+		rect.attr("height", 40);
+		rect.attr("width", 25);
+		
+		</script>
+	</div>
+</body>
+</html>
