@@ -1,0 +1,94 @@
+<html>
+<head>
+<!-- The dataset is here:
+http://mimno.infosci.cornell.edu/info3300/yelp_stars.json -->
+
+<!-- Load the d3 library. -->
+<script src="http://d3js.org/d3.v3.min.js" charset="utf-8"></script>
+<link href='http://fonts.googleapis.com/css?family=Open+Sans' rel='stylesheet' type='text/css'>
+<style>
+svg { border: solid black 1px; }
+.axis path { fill: none; stroke: black;}
+.axis line { stroke: black; }
+text { font-size: small; font-family: "Open Sans", Calibri; opacity: 0.3; text-anchor: middle; dominant-baseline: central; }
+text:hover { fill: blue; opacity: 1.0; font-weight: bold; font-size: xx-large; }
+</style>
+</head>
+<body>
+
+<div id="plot"></div>
+
+<script>
+
+var height = 600;
+var width = 800;
+var padding = 50;
+
+var countMinMax = [100, 26000];
+
+var svg = d3.select("#plot").append("svg")
+   .attr("height", height).attr("width", width);
+
+// We could use a log scale here, but I'm going to use a linear
+// scale and pass in the log of the probability ratio.
+var xScale = d3.scale.linear()
+  .domain([-4, 4]).range([padding, width - padding]);
+  
+// We'll use a log scale on the y axis, so we can see both low-frequency
+// words and high frequency words.
+var yScale = d3.scale.log()
+  .domain(countMinMax).range([height - padding, padding]);
+
+var xAxis = d3.svg.axis().scale(xScale);
+svg.append("g")
+  .attr("class", "axis")
+  .attr("transform", "translate(0, " + yScale(countMinMax[0]) + ")")
+  .call(xAxis);
+
+var yAxis = d3.svg.axis().scale(yScale).orient("left");
+svg.append("g")
+	.attr("class", "axis")
+	.attr("transform", "translate(" + padding + ", 0)")
+	.call(yAxis);
+
+var yelp;
+
+d3.json("yelp_stars.json", function (data) {
+	yelp = data;
+
+	var wordGroup = svg.append("g");
+	var words = wordGroup.selectAll("text").data(yelp.words);
+
+	words.enter().append("text")
+	.attr("x", function(w) { 
+		
+		// We want to show whether a given word is associated more with
+		//  positive reviews or negative reviews. But we know that there
+		//  are a lot more positive reviews, so the raw counts aren't going
+		//  to be comparable.
+		// So first we'll turn the counts into ratios, which we'll 
+		//  assert are estimates of probability.
+		var fivestarProbability = w.fivestar / yelp.fivestartokens;
+		var onestarProbability = w.onestar / yelp.onestartokens;
+		
+		// We could plot the difference between probabilities. What does that look like?
+		// Instead, we'll plot the ratio of the two words.
+		// But the ratio has a problem: it's not symmetric. We can 
+		//  easily see ratios greater than one, but ratios less than one all
+		//  bunch together. The log function turns division into subtraction. 
+		return xScale(Math.log(fivestarProbability / onestarProbability));
+	})
+	.attr("y", function(w) { return yScale(w.count); })
+	.text(function (w) { return w.word; } );
+});
+
+</script>
+</body>
+</html>
+
+
+
+
+
+
+
