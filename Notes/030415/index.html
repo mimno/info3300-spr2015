@@ -1,0 +1,150 @@
+<html>
+<head>
+<!-- The dataset is here:
+http://mimno.infosci.cornell.edu/info3300/yelp_stars.json -->
+
+<!-- Load the d3 library. -->
+<script src="http://d3js.org/d3.v3.min.js" charset="utf-8"></script>
+<link href='http://fonts.googleapis.com/css?family=Open+Sans' rel='stylesheet' type='text/css'>
+<style>
+svg { border: solid black 1px; }
+.axis path { fill: none; stroke: black;}
+.axis line { stroke: black; }
+text { font-size: small; font-family: "Open Sans", Calibri; opacity: 0.3; text-anchor: middle; dominant-baseline: central; }
+text:hover { fill: blue; opacity: 1.0; font-weight: bold; font-size: xx-large; }
+</style>
+</head>
+<body>
+	
+<h3>Notes for Wed, Mar 4. Why logs? Sampling from a probability distribution.</h3>
+
+<div>Please take a look at the document I mentioned in class on <a href="http://www.macwright.org/2015/02/28/errors.html">finding errors in javascript</a>.</div>
+
+<div id="plot"></div>
+
+<script>
+
+var height = 600;
+var width = 800;
+var padding = 50;
+
+var countMinMax = [100, 26000];
+
+var svg = d3.select("#plot").append("svg")
+   .attr("height", height).attr("width", width);
+
+// We could use a log scale here, but I'm going to use a linear
+// scale and pass in the log of the probability ratio.
+var xScale = d3.scale.linear()
+  .domain([-4, 4]).range([padding, width - padding]);
+  
+// We'll use a log scale on the y axis, so we can see both low-frequency
+// words and high frequency words.
+var yScale = d3.scale.log()
+  .domain(countMinMax).range([height - padding, padding]);
+
+var xAxis = d3.svg.axis().scale(xScale);
+svg.append("g")
+  .attr("class", "axis")
+  .attr("transform", "translate(0, " + yScale(countMinMax[0]) + ")")
+  .call(xAxis);
+
+var yAxis = d3.svg.axis().scale(yScale).orient("left");
+svg.append("g")
+	.attr("class", "axis")
+	.attr("transform", "translate(" + padding + ", 0)")
+	.call(yAxis);
+
+var yelp;
+var words;
+
+var samplePositiveWord = function () {
+	// This is equivalent to picking a random word from a 
+	//  giant bag filled with words.
+	var sample = Math.random() * yelp.fivestartokens;
+	
+	// If we had a single giant array filled with words we could
+	//  floor that number and use it as an index (and sometimes we
+	//  might do exactly that), but what we have is an array of 
+	//  word *types*, not tokens.
+	// What we'll do instead is loop through each type, check how
+	//  many tokens of that type occur in the training corpus, 
+	//  and then see if our sampled word falls in that range.
+	for (var i = 0; i < yelp.words.length; i++) {
+		if (sample < yelp.words[i].fivestar) {
+			// record that a word has been sampled at least once
+			yelp.words[i].selected = 1;
+			// Return the word and its probability.
+			return { w: yelp.words[i].word,
+				p: yelp.words[i].fivestar / yelp.fivestartokens };
+		}
+		// Our index didn't fall in the range associated with 
+		//  the current word. Subtract off that word's weight
+		//  and keep going.
+		sample -= yelp.words[i].fivestar;
+	}
+	console.log("error: we should have selected a word by now " + sample);
+}
+
+var samplePositiveDoc = function(length) {
+	var doc = "";
+	
+	// We initialized probability at 1.0, but log probability at 0.0.
+	//   Why?
+	var logProbability = 0.0;
+	
+	for (var i = 0; i < length; i++) {
+		var token = samplePositiveWord();
+		doc += token.w + " ";
+		
+		// We started by calculating probability.
+		// This is a big product of independent even probabilties.
+		// That quickly became vanishingly close to zero.
+		// The log function turns multiplication into addition,
+		//  which means that we can deal with very small numbers.
+		logProbability += Math.log(token.p);
+	}
+	// Show the document and its log probability
+	console.log(doc, logProbability);
+	
+	// Dynamic vis! Change the appearance of words so that 
+	//  only words that we sampled will be displayed.
+	// How does this word swarm look different from the overall 
+	//  words swarm?
+	words.transition()
+	 .style("fill", function (w) {
+		 if (w.selected) { return "#007700"; }
+		 else { return "none"; }
+	 });
+	
+};
+
+d3.json("yelp_stars.json", function (data) {
+	yelp = data;
+
+	var wordGroup = svg.append("g");
+	words = wordGroup.selectAll("text").data(yelp.words);
+
+	words.enter().append("text")
+	.attr("x", function(w) { 
+		
+		var fivestarProbability = w.fivestar / yelp.fivestartokens;
+		var onestarProbability = w.onestar / yelp.onestartokens;
+		
+		return xScale(Math.log(fivestarProbability) - Math.log(onestarProbability));
+		//return xScale(fivestarProbability - onestarProbability);
+	})
+	.attr("y", function(w) { return yScale(w.count); })
+	.text(function (w) { return w.word; } );
+});
+
+</script>
+</body>
+</html>
+
+
+
+
+
+
+
