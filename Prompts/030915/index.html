@@ -1,0 +1,87 @@
+<html>
+<head>
+<!-- The dataset is here:
+http://mimno.infosci.cornell.edu/info3300/yelp_stars.json -->
+
+<!-- Load the d3 library. -->
+<script src="http://d3js.org/d3.v3.min.js" charset="utf-8"></script>
+<link href='http://fonts.googleapis.com/css?family=Open+Sans' rel='stylesheet' type='text/css'>
+<style>
+body { font-family: "Open Sans"; }
+svg { border: solid black 1px; }
+.bar rect { fill: #ccc; }
+.axis path { fill: none; stroke: black;}
+.axis line { stroke: black; }
+.axis text { font-size: x-small; }
+</style>
+</head>
+<body>
+	
+<h3>Prompt for Mon, Mar 9. Exponential distribution. Histograms.</h3>
+
+<div id="plot"></div>
+
+<script>
+
+var height = 300;
+var width = 400;
+var padding = 30;
+
+var svg = d3.select("#plot").append("svg")
+.attr("height", height)
+.attr("width", width);
+
+// What does this distribution look like?
+var randomExponential = function () {
+	return -Math.log(Math.random());
+}
+
+var sequence = new Array(1000);
+for (var i = 0; i < sequence.length; i++) {
+	sequence[i] = randomExponential();
+}
+
+var mean = d3.mean(sequence);
+var sd = d3.sum(sequence, function (d) { return (d - mean) * (d - mean); }) / (sequence.length - 1);
+
+var histogram = d3.layout.histogram().bins(20);
+var bins = histogram(sequence);
+var binWidth = bins[0].dx;
+
+var xScale = d3.scale.linear()
+.domain([0, d3.max(sequence)]).range([0 + padding, width]);
+
+var yScale = d3.scale.linear()
+.domain([0, d3.max(bins, function (bin) { return bin.y; })])
+.range([height - padding, 10]);
+
+
+
+var bars = svg.selectAll(".bar").data(bins);
+
+bars.enter().append("g").attr("class", "bar");
+
+// Display bars
+
+var xAxis = d3.svg.axis().scale(xScale);
+svg.append("g")
+  .attr("class", "axis")
+  .attr("transform", "translate(0, " + (height - padding) + ")")
+  .call(xAxis);
+
+var yAxis = d3.svg.axis().scale(yScale).orient("left");
+svg.append("g")
+	.attr("class", "axis")
+	.attr("transform", "translate(" + padding + ", 0)")
+	.call(yAxis);
+
+</script>
+</body>
+</html>
+
+
+
+
+
+
+
