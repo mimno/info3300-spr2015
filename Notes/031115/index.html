@@ -1,0 +1,140 @@
+<html>
+<head>
+<!-- Load the d3 library. -->
+<script src="http://d3js.org/d3.v3.min.js" charset="utf-8"></script>
+<link href='http://fonts.googleapis.com/css?family=Open+Sans' rel='stylesheet' type='text/css'>
+<style>
+body { font-family: "Open Sans"; }
+svg { border: solid black 1px; }
+.bar rect { fill: #ccc; }
+.axis path { fill: none; stroke: black;}
+.axis line { stroke: black; }
+.axis text { font-size: x-small; }
+</style>
+</head>
+<body>
+	
+<h3>Notes for Wed, Mar 11. <a href="http://en.wikipedia.org/wiki/Poisson_distribution">Poisson distribution</a>. Discrete bar plots.</h3>
+
+<div id="plot"></div>
+
+<script>
+
+var height = 300;
+var width = 400;
+var padding = 30;
+
+var svg = d3.select("#plot").append("svg")
+.attr("height", height)
+.attr("width", width);
+
+var randomExponential = function () {
+	return -Math.log(Math.random());
+}
+
+var exponentialThreshold = function (threshold) {
+	var steps = 0;
+	var sum = randomExponential();
+	while (sum < threshold) {
+		steps++;
+		sum += randomExponential();
+	}
+	return steps;
+}
+
+var threshold = 4.0;
+
+var sequence = new Array(1000);
+for (var i = 0; i < sequence.length; i++) {
+	sequence[i] = exponentialThreshold(threshold);
+}
+
+var poisson = new Array(20);
+poisson[0] = Math.exp(-threshold);
+for (var i = 1; i < 20; i++) {
+	poisson[i] = poisson[i-1] * threshold / i;
+}
+
+// Let's calculate some descripive statistics.
+var mean = d3.mean(sequence);
+var sd = Math.sqrt(d3.sum(sequence, function (d) { return (d - mean) * (d - mean); }) / (sequence.length - 1));
+sequence.sort();
+var median = sequence[ sequence.length / 2 ];
+
+// D3 tools for building histograms
+var histogram = d3.layout.histogram().range([0,20]).bins(20);
+var bins = histogram(sequence);
+// bins is an array of 20 elements containing the elements of the input array
+//  that fall into 20 equal-sized bins from min(sequence) to max(sequence).
+// Since JS implements arrays as objects, we can add some extra properties,
+//  like the bin width:
+var binWidth = bins[0].dx;
+
+var xScale = d3.scale.ordinal()
+.domain(d3.range(0,20)).rangeRoundBands([0 + padding, width]);
+
+var yScale = d3.scale.linear()
+.domain([0, d3.max(bins, function (bin) { return bin.y; })])
+.range([height - padding, 10]);
+
+
+
+var bars = svg.selectAll(".bar").data(bins);
+
+bars.enter().append("g").attr("class", "bar");
+
+// Display bars
+
+// Use a transform to position the bar
+bars.attr("transform", function (bin) {
+	return "translate(" + xScale(bin.x) + "," + yScale(bin.y) + ")";
+});
+
+// In each bar's group, add a rect
+bars.append("rect")
+.attr("x", 1)
+.attr("width", xScale(binWidth) - xScale(0) - 1)
+.attr("height", function(bin) {
+	return height - padding - yScale(bin.y);
+});
+
+// ... and a text label
+bars.append("text")
+.attr("x", 0.5 * (xScale(binWidth) - xScale(0) - 1))
+.attr("y", -3)
+.style("font-size", "x-small")
+.style("text-anchor", "middle")
+.style("fill", "#777")
+.text(function (bin) { return bin.y; });
+
+svg.selectAll(".poisson").data(poisson)
+.enter().append("line")
+.style("stroke", "black")
+.attr("x1", function (d, i) { return xScale(i); })
+.attr("x2", function (d, i) { return xScale(i+1); })
+.attr("y1", function (d) { return yScale(1000 * d); })
+.attr("y2", function (d) { return yScale(1000 * d); });
+
+
+var xAxis = d3.svg.axis().scale(xScale);
+svg.append("g")
+  .attr("class", "axis")
+  .attr("transform", "translate(0, " + (height - padding) + ")")
+  .call(xAxis);
+
+var yAxis = d3.svg.axis().scale(yScale).orient("left");
+svg.append("g")
+	.attr("class", "axis")
+	.attr("transform", "translate(" + padding + ", 0)")
+	.call(yAxis);
+
+</script>
+</body>
+</html>
+
+
+
+
+
+
+
