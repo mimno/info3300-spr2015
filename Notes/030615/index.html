@@ -1,0 +1,148 @@
+<html>
+<head>
+<!-- The dataset is here:
+http://mimno.infosci.cornell.edu/info3300/yelp_stars.json -->
+
+<!-- Load the d3 library. -->
+<script src="http://d3js.org/d3.v3.min.js" charset="utf-8"></script>
+<link href='http://fonts.googleapis.com/css?family=Open+Sans' rel='stylesheet' type='text/css'>
+<style>
+svg { border: solid black 1px; }
+.axis path { fill: none; stroke: black;}
+.axis line { stroke: black; }
+text { font-size: small; font-family: "Open Sans", Calibri; opacity: 0.3; text-anchor: middle; dominant-baseline: central; }
+text:hover { fill: blue; opacity: 1.0; font-weight: bold; font-size: xx-large; }
+</style>
+</head>
+<body>
+	
+<h3>Notes for Fri, Mar 6. Sampling from two probability distributions. What do they look like? How can we guess which one generated a document?</h3>
+
+<div id="plot"></div>
+
+<script>
+
+var height = 600;
+var width = 800;
+var padding = 50;
+
+var countMinMax = [100, 26000];
+
+var svg = d3.select("#plot").append("svg")
+   .attr("height", height).attr("width", width);
+
+// We could use a log scale here, but I'm going to use a linear
+// scale and pass in the log of the probability ratio.
+var xScale = d3.scale.linear()
+  .domain([-4, 4]).range([padding, width - padding]);
+  
+// We'll use a log scale on the y axis, so we can see both low-frequency
+// words and high frequency words.
+var yScale = d3.scale.log()
+  .domain(countMinMax).range([height - padding, padding]);
+
+var xAxis = d3.svg.axis().scale(xScale);
+svg.append("g")
+  .attr("class", "axis")
+  .attr("transform", "translate(0, " + yScale(countMinMax[0]) + ")")
+  .call(xAxis);
+
+var yAxis = d3.svg.axis().scale(yScale).orient("left");
+svg.append("g")
+	.attr("class", "axis")
+	.attr("transform", "translate(" + padding + ", 0)")
+	.call(yAxis);
+
+var yelp;
+var words;
+
+var samplePositiveWord = function () {
+	var sample = Math.random() * yelp.fivestartokens;
+	for (var i = 0; i < yelp.words.length; i++) {
+		if (sample < yelp.words[i].fivestar) {
+			yelp.words[i].selected = 1;
+			return { w: yelp.words[i].word,
+				p: yelp.words[i].fivestar / yelp.fivestartokens };
+		}
+		sample -= yelp.words[i].fivestar;
+	}
+	console.log("error: we should have selected a word by now " + sample);
+}
+
+var sampleNegativeWord = function () {
+	var sample = Math.random() * yelp.onestartokens;
+	for (var i = 0; i < yelp.words.length; i++) {
+		if (sample < yelp.words[i].onestar) {
+			yelp.words[i].selected = 1;
+			return { w: yelp.words[i].word,
+				p: yelp.words[i].onestar / yelp.onestartokens };
+		}
+		sample -= yelp.words[i].onestar;
+	}
+	console.log("error: we should have selected a word by now " + sample);
+}
+
+var sampleDoc = function(length) {
+	var doc = "";
+	
+	yelp.words.forEach(function (w) { w.selected = 0; });
+	
+	var wordGenerator;
+	
+	if (Math.random() * (yelp.onestardocs + yelp.fivestardocs) < yelp.onestardocs) {
+		wordGenerator = sampleNegativeWord;
+		console.log("bad");
+	}
+	else {
+		wordGenerator = samplePositiveWord;
+		console.log("good");
+	}
+	
+	var logProbability = 0.0;
+	
+	for (var i = 0; i < length; i++) {
+		var token = wordGenerator();
+		doc += token.w + " ";
+		logProbability += Math.log(token.p);
+	}
+	// Show the document and its log probability
+	console.log(doc, logProbability);
+	
+	words.transition()
+	 .style("fill", function (w) {
+		 if (w.selected) { return "#007700"; }
+		 else { return "none"; }
+	 })
+	 .style("opacity", 1.0);
+	
+};
+
+d3.json("yelp_stars.json", function (data) {
+	yelp = data;
+
+	var wordGroup = svg.append("g");
+	words = wordGroup.selectAll("text").data(yelp.words);
+
+	words.enter().append("text")
+	.attr("x", function(w) { 
+		
+		var fivestarProbability = w.fivestar / yelp.fivestartokens;
+		var onestarProbability = w.onestar / yelp.onestartokens;
+		
+		return xScale(Math.log(fivestarProbability) - Math.log(onestarProbability));
+		//return xScale(fivestarProbability - onestarProbability);
+	})
+	.attr("y", function(w) { return yScale(w.count); })
+	.text(function (w) { return w.word; } );
+});
+
+</script>
+</body>
+</html>
+
+
+
+
+
+
+
