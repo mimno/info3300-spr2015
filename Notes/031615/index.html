@@ -1,0 +1,110 @@
+<html>
+<head>
+<script src="http://d3js.org/d3.v3.min.js"></script>
+<link href='http://fonts.googleapis.com/css?family=Open+Sans' rel='stylesheet' type='text/css'>
+<style>
+body { font-family: "Open Sans"; }
+</style>
+</head>
+<body>
+<h3>Notes for Mon, Mar 16. Networks.</h3>
+
+<div id="network">
+	<button id="sample">Sample</button>
+</div>
+
+<script>
+var height = 300;
+var width = 300;
+
+var svg = d3.select("#network").append("svg").attr("height", height).attr("width", width);
+	
+var graph;
+
+function randomNode() {
+	return Math.floor(Math.random() * graph.nodes.length);
+}
+
+function randomIndex(array) {
+	return Math.floor(Math.random() * 
+			array.length);
+}
+
+d3.select("#sample").on("click", function () {
+	graph = {
+		nodes: [],
+		links: []
+	};
+	
+	// Construct a random network
+	for (var i = 0; i < 20; i++) {
+		graph.nodes.push({});
+	}
+	
+	for (var i = 0; i < 20; i++) {
+		var target;
+		
+		var randomLinkProb =
+		graph.links.length /
+			(graph.links.length + 0.1);
+			
+		if (Math.random() < randomLinkProb) {
+			var link = randomIndex(graph.links);
+			target = graph.links[link].target;
+		}
+		else {
+			target = randomIndex(graph.nodes);
+		}
+		
+		graph.links.push({
+			source: randomIndex(graph.nodes),
+			target: target
+		});
+	}
+		 
+	var force = d3.layout.force()
+    .size([width, height]);
+
+	force.nodes(graph.nodes)
+	.links(graph.links)
+	.start();
+
+	var link = svg.selectAll("line")
+	.data(graph.links);
+	
+	link.enter()
+	 .append("line")
+	 .attr("class", "link")
+	 .attr("stroke", "black");
+ 
+	var node = svg.selectAll("circle")
+	 .data(graph.nodes);
+	 
+	node.enter()
+	 .append("circle")
+	 .attr("class", "node")
+	 .style("fill", function(d) { 
+		 if (d.infected) { return "red"; }
+		 else { return "black"; }
+	  })
+	  .attr("r", 5);
+	  
+	node.call(force.drag);
+ 
+	force.on("tick", function() {
+	 link.attr("x1", function(d) { return d.source.x; })
+	     .attr("y1", function(d) { return d.source.y; })
+	     .attr("x2", function(d) { return d.target.x; })
+	     .attr("y2", function(d) { return d.target.y; });
+
+	 node.attr("cx", function(d) { return d.x; })
+	     .attr("cy", function(d) { return d.y; });
+	});
+ 
+});
+
+
+</script>
+
+</body>
+</html>

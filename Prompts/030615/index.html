@@ -89,14 +89,7 @@ var sampleDoc = function(length) {
 	
 	var wordGenerator;
 	
-	if (Math.random() * (yelp.onestardocs + yelp.fivestardocs) < yelp.onestardocs) {
-		wordGenerator = sampleNegativeWord;
-		console.log("bad");
-	}
-	else {
-		wordGenerator = samplePositiveWord;
-		console.log("good");
-	}
+	// How would we choose whether to generate a good review or a bad review?
 	
 	var logProbability = 0.0;
 	

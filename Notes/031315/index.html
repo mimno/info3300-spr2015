@@ -1,0 +1,177 @@
+<html>
+<head>
+<!-- Load the d3 library. -->
+<script src="http://d3js.org/d3.v3.min.js" charset="utf-8"></script>
+<link href='http://fonts.googleapis.com/css?family=Open+Sans' rel='stylesheet' type='text/css'>
+<style>
+body { font-family: "Open Sans"; }
+svg { border: solid black 1px; }
+.bar rect { fill: #ccc; }
+.axis path { fill: none; stroke: black;}
+.axis line { stroke: black; }
+.axis text { font-size: x-small; }
+</style>
+</head>
+<body>
+	
+<h3>Notes for Fri, Mar 13. Can we find the <a href="http://en.wikipedia.org/wiki/Poisson_distribution">Poisson distribution</a> in nature?</h3>
+
+
+
+<p>Business tags from <a href="http://www.yelp.com/dataset_challenge">the Yelp Dataset Challenge</a>. Airport connections from <a href="http://openflights.org/data.html">Open Flights</a>. Shipping data from <a href="http://www.portarrivals.com/list.asp?sec=Region&c=NAE&t=NORTH%20AMERICA%20EAST%20COAST">portarrivals.com</a>. Sunspot data from <a href="https://www.quandl.com/data/SIDC/SUNSPOTS_A-Sunspot-Numbers-Annual">Quandl</a>.</p>
+
+<div id="plot"></div>
+
+<script>
+
+var height = 300;
+var width = 400;
+var padding = 30;
+
+var randomExponential = function () {
+	return -Math.log(Math.random());
+}
+
+var samplePoisson = function (threshold) {
+	var steps = 0;
+	var sum = randomExponential();
+	while (sum < threshold) {
+		steps++;
+		sum += randomExponential();
+	}
+	return steps;
+}
+
+var poissonProbabilities = function(threshold, max) {
+	var poisson = new Array(max+1);
+	poisson[0] = Math.exp(-threshold);
+	for (var i = 1; i <= max; i++) {
+		poisson[i] = poisson[i-1] * threshold / i;
+	}
+	return poisson;
+}
+
+var ships;
+var nest;
+
+d3.tsv("eastcoastships.tsv", function (error, _ships) {
+	ships = _ships;
+	
+	nest = d3.nest()
+	.key(function (d) {
+		return d.ETA.replace(/ \d+:\d+/, "");
+	})
+	.entries(ships);
+	
+	var sequence = nest.map(function (d) {
+		return d.values.length;
+	})
+	
+	/*
+	sequence = sequence.filter(function (d){
+		return d < 10;
+	});
+	*/
+
+	// Let's calculate some descripive statistics.
+	var mean = d3.mean(sequence);
+	var max = d3.max(sequence);
+	var variance = d3.variance(sequence);
+	var sd = Math.sqrt(variance);
+	sequence.sort();
+	var median = sequence[ Math.floor(sequence.length / 2) ];
+
+	var poisson = poissonProbabilities(mean, 19);
+
+	// D3 tools for building histograms
+	var histogram = d3.layout.histogram().range([0,20]).bins(20);
+	var bins = histogram(sequence);
+	// bins is an array of 20 elements containing the elements of the input array
+	//  that fall into 20 equal-sized bins from min(sequence) to max(sequence).
+	// Since JS implements arrays as objects, we can add some extra properties,
+	//  like the bin width:
+
+	var xScale = d3.scale.ordinal()
+	.domain(d3.range(0,20)).rangeRoundBands([0 + padding, width]);
+
+	var yScale = d3.scale.linear()
+	.domain([0, d3.max(bins, function (bin) { return bin.y; })])
+	.range([height - padding, 10]);
+
+	var binWidth = bins[0].dx;
+	var binPixels = xScale(binWidth) - xScale(0) - 1;
+
+	var svg = d3.select("#plot").append("svg")
+	.attr("height", height)
+	.attr("width", width);
+	
+	var format = d3.format(".2f");
+	
+	svg.append("text")
+	.attr("x", width * 0.5)
+	.attr("y", height * 0.1)
+	.style("font-size", "x-small")
+	.text("mean: " + format(mean) + " var: " + format(variance) + " median: " + format(median));
+
+	var bars = svg.selectAll(".bar").data(bins);
+
+	bars.enter().append("g").attr("class", "bar");
+
+	// Display bars
+
+	// Use a transform to position the bar
+	bars.attr("transform", function (bin) {
+		return "translate(" + xScale(bin.x) + "," + yScale(bin.y) + ")";
+	});
+
+	// In each bar's group, add a rect
+	bars.append("rect")
+	.attr("x", 1)
+	.attr("width", binPixels)
+	.attr("height", function(bin) {
+		return height - padding - yScale(bin.y);
+	});
+
+	// ... and a text label
+	bars.append("text")
+	.attr("x", 0.5 * binPixels)
+	.attr("y", -3)
+	.style("font-size", "x-small")
+	.style("text-anchor", "middle")
+	.style("fill", "#777")
+	.text(function (bin) { return bin.y; });
+
+	svg.selectAll(".poisson").data(poisson)
+	.enter().append("line")
+	.style("stroke", "black")
+	.attr("class", "poisson")
+	.attr("x1", function (d, i) { return xScale(i); })
+	.attr("x2", function (d, i) { return xScale(i) + binPixels; })
+	.attr("y1", function (d) { return yScale(sequence.length * d); })
+	.attr("y2", function (d) { return yScale(sequence.length * d); });
+
+
+	var xAxis = d3.svg.axis().scale(xScale);
+	svg.append("g")
+	  .attr("class", "axis")
+	  .attr("transform", "translate(0, " + (height - padding) + ")")
+	  .call(xAxis);
+
+	var yAxis = d3.svg.axis().scale(yScale).orient("left");
+	svg.append("g")
+		.attr("class", "axis")
+		.attr("transform", "translate(" + padding + ", 0)")
+		.call(yAxis);
+
+});
+
+</script>
+</body>
+</html>
+
+
+
+
+
+
+
