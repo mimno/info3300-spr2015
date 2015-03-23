@@ -1,0 +1,113 @@
+<html>
+<head>
+<script src="http://d3js.org/d3.v3.min.js"></script>
+<link href='http://fonts.googleapis.com/css?family=Open+Sans' rel='stylesheet' type='text/css'>
+<style>
+body { font-family: "Open Sans"; }
+svg { border: solid black 1px; }
+button { padding: 5px; }
+</style>
+</head>
+<body>
+<h3>Prompt for Mon, Mar 23. Clustering.</h3>
+
+<div>
+	<button id="findclosest">Find Closest</button>
+	<button id="movemeans">Move Means</button>
+</div>
+<div id="points">
+</div>
+
+<script>
+var height = 300;
+var width = 300;
+var padding = 50;
+
+var svg = d3.select("#points").append("svg").attr("height", height).attr("width", width);
+	
+var lines, circles, centroids;
+
+var gaussian = d3.random.normal();
+
+var xScale = d3.scale.linear().domain([0,1]).range([padding, width - padding]);
+var yScale = d3.scale.linear().domain([0,1]).range([height - padding, padding]);
+
+function makeClusters(numClusters, pointsPerCluster, spread) {
+	var points = [];
+	
+	for (var clusterID = 0; clusterID < numClusters; clusterID++) {
+		// Sample a center, uniformly.
+		//  Note that we don't try to keep centers away from each other.
+		var center = { x: Math.random(), y: Math.random() };
+		
+		// Keep track of where the "real" center is.
+		svg.append("circle")
+		.attr("class", "realCenter")
+		.attr("cx", xScale(center.x))
+		.attr("cy", yScale(center.y))
+		.attr("r", 2);
+		 
+		// Sample some number of points, which are probably close to the 
+		//   current center.
+		for (var i = 0; i < pointsPerCluster; i++) {
+			points.push({
+				cluster: clusterID,
+				x: center.x + gaussian() * spread,
+				y: center.y + gaussian() * spread
+			});
+		}
+	}
+	
+	return points;
+}
+
+var points = makeClusters(3, 10, 0.1);
+
+// For each observed point, leave a circle
+circles = svg.selectAll(".point").data(points);
+
+circles.enter().append("circle")
+.attr("class", "point")
+.attr("cx", function(d) { return xScale(d.x); })
+.attr("cy", function(d) { return yScale(d.y); })
+.attr("r", 3)
+.style("fill", "green")
+.style("opacity", 0.3);
+
+// Also add a line from each point, which will point to 
+//  the closest *inferred* cluster center.
+lines = svg.selectAll("line").data(points);
+
+lines.enter().append("line")
+.attr("x1", function(d) { return xScale(d.x); })
+.attr("y1", function(d) { return yScale(d.y); })
+.attr("x2", function(d) { return xScale(d.x); })
+.attr("y2", function(d) { return yScale(d.y); })
+.style("stroke", "#aaa");
+
+centroids = new Array(3);
+for (var i = 0; i < centroids.length; i++) {
+	centroids[i] = { x: Math.random(), y: Math.random() };
+}
+
+d3.select("#movemeans").on("click", function () {
+	// For each centroid, find the points closest to that centroid,
+	//  and then move the centroid to their midpoint.
+		
+	// Update the lines from each point to its centroid
+
+});
+
+d3.select("#findclosest").on("click", function () {
+
+	// For each point, find the nearest centroid
+	
+	// Draw a line from each point to its closest cluster centroid.
+
+});
+
+
+</script>
+
+</body>
+</html>

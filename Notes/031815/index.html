@@ -1,0 +1,202 @@
+<html>
+<head>
+<script src="http://d3js.org/d3.v3.min.js"></script>
+<link href='http://fonts.googleapis.com/css?family=Open+Sans' rel='stylesheet' type='text/css'>
+<style>
+body { font-family: "Open Sans"; }
+</style>
+</head>
+<body>
+<h3>Notes for Wed, Mar 18. Propagation through networks.</h3>
+
+<div id="network">
+	<button id="sample">Sample</button>
+	<button id="propagate">Propagate</button>
+</div>
+
+<script>
+var height = 400;
+var width = 400;
+
+var svg = d3.select("#network").append("svg").attr("height", height).attr("width", width);
+	
+var graph;
+
+function randomIndex(array) {
+	return Math.floor(Math.random() * array.length);
+}
+
+function randomGraph(numNodes, numEdges) {
+	var graph = {
+		nodes: [],
+		links: []
+	};
+	for (var i=0; i < numNodes; i++) {
+		graph.nodes.push({ neighbors: [] });
+	}
+	for (var i=0; i < numEdges; i++) {
+		var source = randomIndex(graph.nodes);
+		var target = randomIndex(graph.nodes);
+				
+		graph.nodes[source].neighbors.push(target);
+		graph.nodes[target].neighbors.push(source);
+	
+		graph.links.push({ source: source, target: target });
+	}
+	
+	return graph;
+}
+
+function cycleGraph(numNodes) {
+	var graph = {
+		nodes: [],
+		links: []
+	};
+	for (var i=0; i < numNodes; i++) {
+		graph.nodes.push({ neighbors: [] });
+	}
+	for (var source=0; source < numNodes; source++) {
+		// Use the % operator to create a ring
+		var target = (source + 1) % numNodes;
+				
+		graph.nodes[source].neighbors.push(target);
+		graph.nodes[target].neighbors.push(source);
+	
+		graph.links.push({ source: source, target: target });
+		
+		target = (source + 2) % numNodes;
+				
+		graph.nodes[source].neighbors.push(target);
+		graph.nodes[target].neighbors.push(source);
+	
+		graph.links.push({ source: source, target: target });
+	}
+	
+	return graph;
+}
+
+function smallWorld(numNodes, numRandomEdges) {
+	var graph = cycleGraph(numNodes);
+	
+	for (var i=0; i < numRandomEdges; i++) {
+		var source = randomIndex(graph.nodes);
+		var target = randomIndex(graph.nodes);
+				
+		graph.nodes[source].neighbors.push(target);
+		graph.nodes[target].neighbors.push(source);
+	
+		graph.links.push({ source: source, target: target });
+	}
+	
+	return graph;
+}
+
+function preferentialGraph(numNodes, numEdges, randomness) {
+	var graph = {
+		nodes: [],
+		links: []
+	};
+	for (var i=0; i < numNodes; i++) {
+		graph.nodes.push({ neighbors: [] });
+	}
+	for (var i=0; i < numEdges; i++) {
+		var source = randomIndex(graph.nodes);
+		var target;
+		
+		var randomProb = randomness / (randomness + graph.links.length);
+		if (Math.random() < randomProb) {
+			target = randomIndex(graph.nodes);
+		}
+		else {
+			// Copy the target of another link
+			target = graph.links[ randomIndex(graph.links) ].target;
+		}
+				
+		graph.nodes[source].neighbors.push(target);
+		graph.nodes[target].neighbors.push(source);
+	
+		graph.links.push({ source: source, target: target });
+	}
+	return graph;
+}
+
+var lines, circles;
+
+d3.select("#sample").on("click", function () {
+	graph = preferentialGraph(40, 40, 5);
+	
+	graph.nodes[ randomIndex(graph.nodes) ].infected = true;
+			 
+	var force = d3.layout.force()
+    .size([width, height]);
+
+	force.nodes(graph.nodes)
+	.links(graph.links)
+	.start();
+
+	lines = svg.selectAll("line")
+	.data(graph.links);
+	
+	lines.enter()
+	 .append("line")
+	 .attr("class", "link")
+	 .attr("stroke", "black");
+ 
+	circles = svg.selectAll("circle")
+	 .data(graph.nodes);
+	 
+	circles.enter()
+	 .append("circle")
+	 .attr("class", "node")
+	 .attr("r", 5);
+	 
+	circles.style("fill", function(d) { 
+		 if (d.infected) { return "red"; }
+		 else { return "black"; }
+	  });
+	  
+	circles.call(force.drag);
+ 
+	force.on("tick", function() {
+	 lines.attr("x1", function(d) { return d.source.x; })
+	     .attr("y1", function(d) { return d.source.y; })
+	     .attr("x2", function(d) { return d.target.x; })
+	     .attr("y2", function(d) { return d.target.y; });
+
+	 circles.attr("cx", function(d) { return d.x; })
+	     .attr("cy", function(d) { return d.y; });
+	});
+ 
+});
+
+d3.select("#propagate").on("click", function () {
+	var condemnedNodes = [];
+
+	// If a node is near an infected node, it should be likely to become infected
+	for (var i = 0; i < graph.nodes.length; i++) {
+		var node = graph.nodes[i];
+		
+		node.neighbors.forEach(function (neighbor) {
+			if (graph.nodes[neighbor].infected && Math.random() < 0.5) {
+				condemnedNodes.push(i);
+			}
+		});
+	}
+	
+	condemnedNodes.forEach(function (nodeID) {
+		graph.nodes[nodeID].infected = true;
+	});
+	
+	// Update the display to show which nodes are now infected.
+	circles.style("fill", function(d) { 
+		 if (d.infected) { return "red"; }
+		 else { return "black"; }
+	  });
+	
+});
+
+
+</script>
+
+</body>
+</html>
