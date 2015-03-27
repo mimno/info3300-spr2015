@@ -76,20 +76,14 @@ svg.on("click", function () {
 });
 
 uniformGroup.on("mousemove", function () {
+	// Where is the mouse in pixel coordinates?
 	var mouseXY = d3.mouse(this);
-	var u1 = xScale.invert(mouseXY[0]);
-	var u2 = yScale.invert(mouseXY[1]);
+
+	// Figure out where the mouse is in data coordinates
 	
-	//console.log(u1, u2);
+	// If the mouse is the 0-1 box, use Box-Muller to transform to a Gaussian
 	
-	if (u1 > 0 && u1 < 1.0 && u2 > 0 && u2 < 1.0) {
-		var z = boxMuller(u1, u2, correlation);
-		
-		boxMullerCircle
-		.attr("cx", xScale(z[0]))
-		.attr("cy", yScale(z[1]));
-		
-	}
+	// Move the green circle
 });
 
 
