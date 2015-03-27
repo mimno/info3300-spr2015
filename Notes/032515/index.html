@@ -1,0 +1,152 @@
+<html>
+<head>
+<script src="http://d3js.org/d3.v3.min.js"></script>
+<link href='http://fonts.googleapis.com/css?family=Open+Sans' rel='stylesheet' type='text/css'>
+<style>
+body { font-family: "Open Sans"; }
+svg { border: solid black 1px; }
+button { padding: 5px; }
+</style>
+</head>
+<body>
+<h3>Notes for Wed, Mar 25. Clustering.</h3>
+
+<div>
+	<button id="findclosest">Find Closest</button>
+	<button id="movemeans">Move Means</button>
+	<span id="location"></span>
+</div>
+<div id="points">
+</div>
+
+<script>
+var height = 300;
+var width = 300;
+var padding = 50;
+
+var svg = d3.select("#points").append("svg").attr("height", height).attr("width", width);
+	
+var lines, circles, centroids;
+
+var xScale, yScale, points;
+
+var countries;
+// Download global health data, sourced from WHO, formatted by the Guardian
+d3.csv("health.csv", function (error, data) {
+	countries = data;
+
+	points = countries.map(function (country) {
+		// Create shorter variable names
+		return {
+			x: Math.log(Number(country["Doctors, per 10,000 population"])),
+		 	y: Number(country["Health spending, % of GDP"]),
+			label: country["Location"]
+		};
+	})
+	.filter(function (point) {
+		// Some countries are missing one or more data fields,
+		//  so silently drop them. Sorry Belgium!
+		return ! isNaN(point.x) && ! isNaN(point.y);
+	});
+
+	xScale = d3.scale.linear()
+	.domain(d3.extent(points, function (point) {
+		return point.x;
+	})).range([padding, width - padding]);
+	yScale = d3.scale.linear()
+	.domain(d3.extent(points, function (point) {
+		return point.y;
+	})).range([height - padding, padding]);
+
+	lines = svg.selectAll("line").data(points);
+
+	// Each point has a line that is initially pointing to itself
+	lines.enter().append("line")
+	.attr("x1", function(d) { return xScale(d.x); })
+	.attr("y1", function(d) { return yScale(d.y); })
+	.attr("x2", function(d) { return xScale(d.x); })
+	.attr("y2", function(d) { return yScale(d.y); })
+	.style("stroke", "#aaa");
+
+	circles = svg.selectAll(".point").data(points);
+
+	// Create a mouseover callback that lists country names
+	circles.enter().append("circle")
+	.attr("class", "point")
+	.attr("cx", function(d) { return xScale(d.x); })
+	.attr("cy", function(d) { return yScale(d.y); })
+	.attr("r", 3)
+	.style("fill", "green")
+	.style("opacity", 0.5)
+	.on("mouseover", function (d) {
+		d3.select("#location").text(d.label);
+	});
+
+	// Hmmm... how many clusters?
+	centroids = new Array(1);
+	for (var i = 0; i < centroids.length; i++) {
+		// Initialize from a randomly chosen point
+		var randomPoint = points[Math.floor(Math.random() * points.length)];
+		centroids[i] = { x: randomPoint.x, y: randomPoint.y };
+	}
+
+});
+
+d3.select("#movemeans").on("click", function () {
+	centroids.forEach(function (centroid, i) {
+		var assignedPoints = 
+			points.filter(function (point) { return point.cluster == i; });
+		
+		centroid.x = d3.mean(assignedPoints, function (point) { return point.x; });
+		centroid.y = d3.mean(assignedPoints, function (point) { return point.y; });
+	});
+	
+	lines.transition().duration(1000).attr("x2", function (point) {
+		return xScale(centroids[point.cluster].x);
+	})
+	.attr("y2", function (point) {
+		return yScale(centroids[point.cluster].y);
+	});
+});
+
+d3.select("#findclosest").on("click", function () {
+
+	points.forEach(function (point) {
+		var nearest;
+		var shortestDistance = Number.MAX_VALUE;
+		for (var i = 0; i < centroids.length; i++) {
+			var c = centroids[i];
+			var distance = Math.sqrt( 
+				(c.x - point.x) * (c.x - point.x) +
+				(c.y - point.y) * (c.y - point.y)
+			);
+		
+			if (distance < shortestDistance) {
+				shortestDistance = distance;
+				nearest = i;
+			}
+		}
+		if (shortestDistance > 2) {
+			point.cluster = centroids.length;
+			centroids.push({ x: point.x, y: point.y });
+		}
+		else {
+			point.cluster = nearest;
+		}
+		
+	});
+	
+	lines.transition().duration(1000).attr("x2", function (point) {
+		return xScale(centroids[point.cluster].x);
+	})
+	.attr("y2", function (point) {
+		return yScale(centroids[point.cluster].y);
+	});
+
+});
+
+
+</script>
+
+</body>
+</html>
