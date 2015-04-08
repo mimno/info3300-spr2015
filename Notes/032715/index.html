@@ -1,0 +1,106 @@
+<html>
+<head>
+<!-- Load the d3 library. -->
+<script src="http://d3js.org/d3.v3.min.js" charset="utf-8"></script>
+<link href='http://fonts.googleapis.com/css?family=Open+Sans' rel='stylesheet' type='text/css'>
+<style>
+body { font-family: "Open Sans"; }
+svg { border: solid black 1px; }
+.bar rect { fill: #ccc; }
+.axis path { fill: none; stroke: black;}
+.axis line { stroke: black; }
+.axis text { font-size: x-small; }
+</style>
+</head>
+<body>
+
+<h3>Notes for Fri, Mar 27. Gaussian sampling, Correlation, Mouse interaction.</h3>
+
+<div id="plot"></div>
+
+<script>
+
+var height = 300;
+var width = 300;
+var padding = 30;
+
+var svg = d3.select("#plot").append("svg")
+.attr("height", height + 2 * padding)
+.attr("width", 2 * width + 4 * padding);
+
+var xScale = d3.scale.linear().domain([-3, 3]).range([0, width]);
+var yScale = d3.scale.linear().domain([-3, 3]).range([height, 0]);
+
+var uniformGroup = svg.append("g").attr("transform", "translate(" + padding + ", " + padding + ")");
+var uniformBox = uniformGroup.append("rect").attr("width", width).attr("height", height).style("fill", "#eee");
+
+var gaussianGroup = svg.append("g").attr("transform", "translate(" + (3 * padding + width) + ", " + padding + ")");
+var gaussianBox = gaussianGroup.append("rect").attr("width", width).attr("height", height).style("fill", "#eee");
+
+var boxMullerCircle = gaussianGroup.append("circle")
+.attr("cx", xScale(0))
+.attr("cy", xScale(0))
+.attr("r", 8)
+.style("fill", "green")
+.style("opacity", 0.5);
+
+var correlation = 0.8;
+
+function boxMuller(u1, u2, correlation) {
+	var z1 = Math.sqrt(-2 * Math.log(u1)) *
+		 Math.cos(2 * Math.PI * u2);
+	var z2 = Math.sqrt(-2 * Math.log(u1)) * Math.sin(2 * Math.PI * u2);
+	
+	z2 *= 1 - correlation * correlation;
+	z2 += correlation * z1;
+	
+	return [z1, z2];
+}
+
+svg.on("click", function () {
+	var point = { u1: Math.random(), u2: Math.random() };
+	
+	uniformGroup.append("circle")
+	.attr("cx", xScale(point.u1))
+	.attr("cy", yScale(point.u2))
+	.attr("r", 5)
+	.style("opacity", 0.5);
+	
+	var z = boxMuller(point.u1, point.u2, correlation);
+	
+	gaussianGroup.append("circle")
+	.attr("cx", xScale(z[0]))
+	.attr("cy", yScale(z[1]))
+	.attr("r", 5)
+	.style("opacity", 0.5);
+	
+});
+
+uniformGroup.on("mousemove", function () {
+	// Where is the mouse in pixel coordinates?
+	var mouseXY = d3.mouse(this);
+	
+	// Figure out where the mouse is in data coordinates
+	var u1 = xScale.invert(mouseXY[0]);
+	var u2 = yScale.invert(mouseXY[1]);
+	
+	//console.log(u1, u2);
+	// If the mouse is the 0-1 box, use Box-Muller to transform to a Gaussian
+	if (u1 > 0 && u1 < 1.0 && u2 > 0.0 && u2 < 1.0) {
+
+		var z = boxMuller(u1, u2, correlation);
+		
+		// Move the green circle
+		boxMullerCircle
+		.attr("cx", xScale(z[0]))
+		.attr("cy", yScale(z[1]));
+		
+	}
+	
+});
+
+
+</script>
+
+</body>
+</html>
