@@ -1,0 +1,141 @@
+<html>
+<head>
+<!-- Load the d3 library. -->
+<script src="http://d3js.org/d3.v3.min.js" charset="utf-8"></script>
+<link href='http://fonts.googleapis.com/css?family=Open+Sans' rel='stylesheet' type='text/css'>
+<style>
+body { font-family: "Open Sans"; }
+svg { border: solid black 1px; }
+.bar rect { fill: #ccc; }
+.axis path { fill: none; stroke: black;}
+.axis line { stroke: black; }
+.axis text { font-size: x-small; }
+</style>
+</head>
+<body>
+
+<h3>Notes for Wed, Apr 8. <a href="http://en.wikipedia.org/wiki/Simple_linear_regression">Simple Linear Regression</a> and <a href="http://en.wikipedia.org/wiki/Least_squares">Least Squares</a>.</h3>
+
+<div id="plot"></div>
+
+<script>
+
+var height = 500;
+var width = 500;
+
+var svg = d3.select("#plot").append("svg")
+.attr("height", height)
+.attr("width", width);
+
+var xScale = d3.scale.linear().domain([-3, 3]).range([0, width]);
+var yScale = d3.scale.linear().domain([-3, 3]).range([height, 0]);
+
+var xAxis = d3.svg.axis().scale(xScale);
+svg.append("g")
+  .attr("class", "axis")
+  .attr("transform", "translate(0, " + (height / 2) + ")")
+  .call(xAxis);
+
+var yAxis = d3.svg.axis().scale(yScale).orient("left");
+svg.append("g")
+	.attr("class", "axis")
+	.attr("transform", "translate(" + (width / 2) + ", 0)")
+	.call(yAxis);
+
+
+var gaussian = d3.random.normal();
+
+function generateLinear(slope, intercept, noise) {
+	var x = gaussian();
+	// Deterministic part
+	var y = x * slope + intercept + 
+		// stochastic part
+		noise * gaussian();
+	
+	return { x: x, y: y };
+}
+
+var points = [];
+
+for (var i = 0; i < 10; i++) {
+	points.push(generateLinear(0.5, 0,
+		 0.3));
+}
+var circles = svg.selectAll("circle").data(points).enter()
+.append("circle")
+.attr("cx", function (d) { return xScale(d.x); })
+.attr("cy", function (d) { return yScale(d.y); })
+.attr("r", 2)
+.style("opacity", "0.3");
+
+// Calculate the slope and intercept.
+	
+var model = {};
+
+var meanX = d3.mean(points, function (d) { 
+	return d.x;
+});
+
+var meanY = d3.mean(points, function (d) { 
+	return d.y;
+});
+
+model.slope = d3.sum(points, function (d) {
+	return (d.x - meanX) * (d.y - meanY);
+});
+
+model.slope /= d3.sum(points, function (d) {
+	return (d.x - meanX) * (d.x - meanX);
+});
+
+model.intercept = meanY - model.slope * meanX;
+	
+var regressionLine = svg.append("line")
+.attr("x1", xScale(-3))
+.attr("y1", yScale(model.slope * -3 + model.intercept))
+.attr("x2", xScale(3))
+.attr("y2", yScale(model.slope * 3 + model.intercept))
+.style("stroke", "#993333");
+
+function errorSquare(point) {
+	var prediction = model.slope * point.x +
+		model.intercept;
+	var error = point.y - prediction;
+	
+	// Return the path "d" string for a square
+	return "M" + xScale(point.x) + "," + yScale(point.y) + 
+		" L" + xScale(error + point.x) + "," + yScale(point.y) +
+		" L" + xScale(error + point.x) + "," + yScale(point.y - error) +
+		" L" + xScale(point.x) + "," + yScale(point.y - error) +
+		"Z";
+}
+
+var squares = svg.selectAll("path.square").data(points).enter()
+.append("path")
+.attr("class", "square")
+.attr("d", errorSquare)
+.attr("opacity", 0.3);
+
+svg.on("click", function() {
+	var mouseXY = d3.mouse(this);
+	
+	// Figure out where the mouse is in data coordinates
+	var clickX = xScale.invert(mouseXY[0]);
+	var clickY = yScale.invert(mouseXY[1]);	
+	
+	// Calculate a new slope
+	model.slope = clickY / clickX;
+	
+	// Move the regression line
+	regressionLine
+	.attr("y1", yScale(model.slope * -3 + model.intercept))
+	.attr("y2", yScale(model.slope * 3 + model.intercept));
+	
+	// Change the squares for each point
+	squares.attr("d", errorSquare);
+});
+
+</script>
+
+</body>
+</html>
