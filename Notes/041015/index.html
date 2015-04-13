@@ -1,0 +1,153 @@
+<html>
+<head>
+<!-- Load the d3 library. -->
+<script src="http://d3js.org/d3.v3.min.js" charset="utf-8"></script>
+<link href='http://fonts.googleapis.com/css?family=Open+Sans' rel='stylesheet' type='text/css'>
+<style>
+body { font-family: "Open Sans"; }
+svg { border: solid black 1px; }
+.bar rect { fill: #ccc; }
+.axis path { fill: none; stroke: black;}
+.axis line { stroke: black; }
+.axis text { font-size: x-small; }
+.brush .extent {
+  stroke: #fff;
+  fill-opacity: .125;
+  shape-rendering: crispEdges;
+}
+
+</style>
+</head>
+<body>
+
+<h3>Notes for Fri, Apr 10. <a href="http://en.wikipedia.org/wiki/Simple_linear_regression">Simple Linear Regression</a> and <a href="https://github.com/mbostock/d3/wiki/SVG-Controls">Brushing</a>.</h3>
+
+<div><ul>
+	<li><a href="http://darkhorseanalytics.com/blog/data-looks-better-naked/">"Data looks better naked"</a> from DarkHorse Analytics</li>
+	<li><a href="https://github.com/caesar0301/awesome-public-datasets">Awesome public datasets</a></li>
+</ul>
+</div>
+
+<div id="plot"></div>
+
+<script>
+
+var usdaData;
+var points;
+
+d3.csv("usda-atlas-people.csv", function (error, rows) {
+	
+	usdaData = rows;
+	
+	points = rows.map(function (county) {
+		return { 
+			state: county.State, x: Number(county.Ed4CollegePlusPct0812), y: Number(county.PopChangeRate1013) 
+		};
+	});
+
+	var height = 500;
+	var width = 500;
+
+	var svg = d3.select("#plot").append("svg")
+	.attr("height", height)
+	.attr("width", width);
+
+	var xDomain = d3.extent(points, function (d) {return d.x; });
+	var yDomain = d3.extent(points, function (d) {return d.y; });
+
+	var xScale = d3.scale.linear().domain(xDomain).range([0, width]);
+	
+	var yScale = d3.scale.linear().domain(yDomain).range([height, 0]);
+
+	var circles = svg.selectAll("circle").data(points).enter()
+	.append("circle")
+	.attr("cx", function (d) { return xScale(d.x); })
+	.attr("cy", function (d) { return yScale(d.y); })
+	.attr("r", 2)
+	.style("opacity", "0.3");
+
+	var currentExtent = [[50, 50], [width - 50, height - 50]];
+
+	function inExtent(point) {
+		// Is the point in the current extent?
+		var mapX = xScale(point.x);
+		var mapY = yScale(point.y);
+		
+		return mapX > currentExtent[0][0] &&
+			mapX < currentExtent[1][0] &&
+			mapY > currentExtent[0][1] &&
+			mapY < currentExtent[1][1];
+			
+	}
+
+	// Calculate the slope and intercept.
+	
+	function leastSquares() {
+		var model = {};
+
+		// Filter the points by the current extent
+		var activePoints = points.filter(inExtent);
+
+		var meanX = d3.mean(activePoints, function (d) { 
+			return d.x;
+		});
+
+		var meanY = d3.mean(activePoints, function (d) { 
+			return d.y;
+		});
+
+		model.slope = d3.sum(activePoints, function (d) {
+			return (d.x - meanX) * (d.y - meanY);
+		});
+
+		model.slope /= d3.sum(activePoints, function (d) {
+			return (d.x - meanX) * (d.x - meanX);
+		});
+
+		model.intercept = meanY - model.slope * meanX;
+	
+		return model;
+	}
+
+	var model = leastSquares();
+
+	var regressionLine = svg.append("line")
+	.attr("x1", xScale(xDomain[0]))
+	.attr("y1", yScale(model.slope * xDomain[0] + model.intercept))
+	.attr("x2", xScale(xDomain[1]))
+	.attr("y2", yScale(model.slope * xDomain[1] + model.intercept))
+	.style("stroke", "#993333");
+
+	function moveLine() {
+		// Move the regression line
+		regressionLine
+		.attr("y1", yScale(model.slope * xDomain[0] + model.intercept))
+		.attr("y2", yScale(model.slope * xDomain[1] + model.intercept));
+	}
+
+	var brush = d3.svg.brush()
+	    .x(d3.scale.identity().domain([0, width]))
+	    .y(d3.scale.identity().domain([0, height]))
+	    .extent(currentExtent)
+	    .on("brush", brushed);
+
+	function brushed () {
+		// Act when the "brush" event occurs
+		currentExtent = brush.extent();
+		model = leastSquares();
+		moveLine();
+	}
+
+	svg.append("g")
+	    .attr("class", "brush")
+	    .call(brush);
+
+	brushed();
+
+});
+
+
+</script>
+
+</body>
+</html>
