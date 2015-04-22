@@ -121,17 +121,27 @@ stateRects
 .on("click", function (stateID) {
 
 	// select (or unselect) the state
+	selectedStates[stateID] = ! selectedStates[stateID]
 	
 	// Update the color of the state box
-	
+	stateRects.style("fill", function (stateID) { if (selectedStates[stateID]) { return "#99f"; } else { return "#ccc"; } } );
+
 	// Select certain circles
+	circles.style("opacity", function (point) { if (selectedStates[point.state]) { return 0.9; } else { return 0.5; } } )
+	.style("fill", function (point) { if (selectedStates[point.state]) { return "#99f"; } else { return "#ccc"; } } );
 	
 	// Move the regression line
+	var model = getModel(points.filter(inSelectedState));
+	regressionLine
+	.attr("y1", yScale(model.slope * xDomain[0] + model.intercept))
+	.attr("y2", yScale(model.slope * xDomain[1] + model.intercept));
+	
 });
 
 // What do we have to do to make this not clickable?
 stateGroups.append("text")
 .style("font-size", "x-small")
+.style("pointer-events", "none")
 .attr("y", stateWidth - 2)
 .text(function (d) { return d; });
 
