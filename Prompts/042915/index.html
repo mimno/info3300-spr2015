@@ -1,0 +1,51 @@
+<html>
+<head>
+<!-- Load the d3 library. -->
+<script src="http://d3js.org/d3.v3.min.js" charset="utf-8"></script>
+<link href='http://fonts.googleapis.com/css?family=Open+Sans' rel='stylesheet' type='text/css'>
+<style>
+body { font-family: "Open Sans"; }
+svg { border: solid black 1px; }
+
+</style>
+</head>
+<body>
+
+<h3>Prompt for Fri, May 1. Orthogonality, Classification, and the Perceptron Algorithms.</h3>
+
+<p></p>
+
+<div id="chart"></div>
+
+
+<script>
+
+var a = { x: 1, y: 1 };
+var b = { x: -1, y: 1 };
+
+var height = 600;
+var width = 600;
+
+var svg = d3.select("#chart").append("svg").attr("height", height).attr("width", width);
+var xScale = d3.scale.linear().domain([-3, 3]).range([0, width]);
+var yScale = d3.scale.linear().domain([-3, 3]).range([height, 0]);
+
+var aLine = svg.append("line")
+.attr("x1", xScale(0)).attr("y1", yScale(0))
+.attr("x2", xScale(a.x)).attr("y2", yScale(a.y))
+.style("stroke", "blue")
+.style("opacity", 0.9)
+.style("stroke-width", 3);
+
+var bLine = svg.append("line")
+.attr("x1", xScale(0)).attr("y1", yScale(0))
+.attr("x2", xScale(b.x)).attr("y2", yScale(b.y))
+.style("stroke", "green")
+.style("opacity", 0.9)
+.style("stroke-width", 3);
+
+
+</script>
+
+</body>
+</html>
