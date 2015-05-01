@@ -1,0 +1,149 @@
+
+<html>
+<head>
+<!-- Load the d3 library. -->
+<script src="http://d3js.org/d3.v3.min.js" charset="utf-8"></script>
+<link href='http://fonts.googleapis.com/css?family=Open+Sans' rel='stylesheet' type='text/css'>
+<style>
+body { font-family: "Open Sans"; }
+svg { border: solid black 1px; }
+
+</style>
+</head>
+<body>
+
+<h3>Prompt for Wed, Apr 29. Orthogonality, Classification, and the Perceptron Algorithms.</h3>
+
+<p></p>
+
+<div id="buttons">
+	<button id="addline">Draw line</button>
+	<button id="samplePoint">Sample and update</button>
+</div>
+<div id="chart"></div>
+
+<script>
+
+var learningRate = 0.2;
+
+var normalGenerator = d3.random.normal();
+
+var weights = { x: 1, y: 1 };
+
+var height = 600;
+var width = 600;
+
+
+var svg = d3.select("#chart").append("svg").attr("height", height).attr("width", width);
+var xScale = d3.scale.linear().domain([-5, 5]).range([0, width]);
+var yScale = d3.scale.linear().domain([-5, 5]).range([height, 0]);
+
+var fill = function(point) { if (point.label > 0) { return "#88c"; } else { return "#c88"; } };
+
+var stroke = function(point) {
+  var prediction;
+  
+  	// How do we use our weights to predict a label?
+
+  if (prediction * point.label > 0) { return "none"; } else { return "black"; }
+};
+
+var points;
+var trainingData = [];
+
+var pointsPerClass = 20;
+
+var normal = d3.random.normal();
+for (var i = 0; i < pointsPerClass; i++) {
+	trainingData.push({ x: normal() - 1.0, y: normal() + 1.0, label: 1, id: i });
+}
+for (var i = 0; i < pointsPerClass; i++) {
+	trainingData.push({ x: normal() + 1.0, y: normal() - 1.0, label: -1, id: pointsPerClass + i });
+}
+
+points = svg.selectAll("circle").data(trainingData).enter().append("circle")
+.attr("id", function (point, i) { return "p"+i; })
+  .attr("cx", function(point) { return xScale(point.x); })
+  .attr("cy", function(point) { return yScale(point.y); })
+  .attr("r", 5)
+  .style("stroke-width", 0)
+  .style("fill", fill)
+  .style("stroke", stroke)
+  .on("click", update);
+
+var blueClassifier, redClassifier;
+var classifierLine;
+
+d3.select("#addline").on("click", function () {
+	
+	// Here's one way to color everything on one side of a line different colors -- how does it work?
+  blueClassifier = svg.append("line").attr("id", "blue")
+    .attr("x1", xScale(0)).attr("y1", yScale(0))
+    .attr("x2", xScale(100 * weights.x)).attr("y2", yScale(100 * weights.y))
+    .style("stroke", "blue")
+	.style("opacity", 0.1)
+	.style("stroke-width", 2000)
+	.style("pointer-events", "none");
+  redClassifier = svg.append("line").attr("id", "red")
+    .attr("x1", xScale(0)).attr("y1", yScale(0))
+    .attr("x2", xScale(-100 * weights.x)).attr("y2", yScale(-100 * weights.y))
+    .style("stroke", "green")
+	.style("opacity", 0.1)
+	.style("stroke-width", 2000)
+	.style("pointer-events", "none");
+	
+  classifierLine = svg.append("line")
+	.attr("x1", xScale(0)).attr("y1", yScale(0))
+    .attr("x2", xScale(weights.x)).attr("y2", yScale(weights.y))
+    .style("stroke", "blue")
+	.style("opacity", 0.9)
+	.style("stroke-width", 3)
+	.style("pointer-events", "none");
+	
+	
+	points.transition().style("stroke-width", 2);
+});
+
+// What happens when we consider a training point?
+//  Users can click individual points:
+function update(point) {
+  var circle = d3.select("#p" + point.id);
+  
+  var prediction = point.x * weights.x + point.y * weights.y;
+  circle.transition().attr("r", "10");
+  
+  if ( /* how do we decide whether we should do something? */ ) {
+
+	  // Update the current model (weights)
+
+  }
+  
+  points.data(trainingData).transition().delay(1000)
+  .style("fill", fill)
+  .style("stroke", stroke)
+  .attr("r", 5);
+  
+  blueClassifier.transition().delay(1000)
+    .attr("x2", xScale(100 * weights.x)).attr("y2", yScale(100 * weights.y));
+  redClassifier.transition().delay(1000)
+    .attr("x2", xScale(-100 * weights.x)).attr("y2", yScale(-100 * weights.y));
+  classifierLine.transition().delay(1000)
+    .attr("x2", xScale(weights.x)).attr("y2", yScale(weights.y));
+
+};
+
+// ... Or users can choose a point at random and update the model.
+function updateRandom() {
+    var pointID = Math.floor(Math.random() * trainingData.length);
+    console.log(pointID);
+  	var point = trainingData[pointID];
+	update(point);
+}
+
+d3.select("#samplePoint").on("click", updateRandom);
+
+
+</script>
+
+</body>
+</html>

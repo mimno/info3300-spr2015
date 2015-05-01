@@ -1,0 +1,146 @@
+<html>
+<head>
+<!-- Load the d3 library. -->
+<script src="http://d3js.org/d3.v3.min.js" charset="utf-8"></script>
+<link href='http://fonts.googleapis.com/css?family=Open+Sans' rel='stylesheet' type='text/css'>
+<style>
+body { font-family: "Open Sans"; }
+svg { border: solid black 1px; }
+
+</style>
+</head>
+<body>
+
+<h3>Notes for Wed Apr 29. Orthogonality, Classification, and the Perceptron Algorithms.</h3>
+
+<p>We want to train a "linear classifier" that guesses, based on a set of input variables, whether the label associated with that input is positive or negative. We can represent the input variables as a point. In real life a classifier could have thousands or millions of inputs (for example, words in a vocabulary). But if we just use our x and y coordinates as two input variables, we can visualize the operation of the classifier more easily and get an intuition for what would happen in a high-dimensional space.</p>
+
+<p>A line divides a 2D plane into two halves. We can use a line to represent our classifier: if a point is on one side of the line, we'll predict positive, if the point is on the other side, we'll predict negative. So that means we need to have a way of representing a line in a way that lets us easily determine whether a given point is on one side or the other.</p>
+
+<p>The answer is that we're going to represent the "decision boundary" line by keeping track of a vector <i>perpendicular</i> to the boundary. Then we'll use the inner product between that vector and the input point. But what does that mean?</p>
+
+<div id="chart"></div>
+
+
+<script>
+
+var a = { x: 1, y: 1 };
+var b = { x: -1, y: 1 };
+
+var height = 600;
+var width = 600;
+
+var svg = d3.select("#chart").append("svg").attr("height", height).attr("width", width);
+var xScale = d3.scale.linear().domain([-3, 3]).range([0, width]);
+var yScale = d3.scale.linear().domain([-3, 3]).range([height, 0]);
+
+var aLine = svg.append("line")
+.attr("x1", xScale(0)).attr("y1", yScale(0))
+.attr("x2", xScale(a.x)).attr("y2", yScale(a.y))
+.style("stroke", "blue")
+.style("opacity", 0.9)
+.style("stroke-width", 3);
+
+var aLineHoriz = svg.append("line")
+.attr("x1", xScale(0)).attr("y1", yScale(0))
+.attr("x2", xScale(a.x)).attr("y2", yScale(0))
+.style("stroke", "blue")
+.style("opacity", 0.9)
+.style("stroke-width", 1);
+
+var aLineVert = svg.append("line")
+.attr("x1", xScale(a.x)).attr("y1", yScale(0))
+.attr("x2", xScale(a.x)).attr("y2", yScale(a.y))
+.style("stroke", "blue")
+.style("opacity", 0.9)
+.style("stroke-width", 1);
+
+var bLine = svg.append("line")
+.attr("x1", xScale(0)).attr("y1", yScale(0))
+.attr("x2", xScale(b.x)).attr("y2", yScale(b.y))
+.style("stroke", "green")
+.style("opacity", 0.9)
+.style("stroke-width", 3);
+
+var bLineHoriz = svg.append("line")
+.attr("x1", xScale(0)).attr("y1", yScale(0))
+.attr("x2", xScale(b.x)).attr("y2", yScale(0))
+.style("stroke", "green")
+.style("opacity", 0.9)
+.style("stroke-width", 1);
+
+var bLineVert = svg.append("line")
+.attr("x1", xScale(b.x)).attr("y1", yScale(0))
+.attr("x2", xScale(b.x)).attr("y2", yScale(b.y))
+.style("stroke", "green")
+.style("opacity", 0.9)
+.style("stroke-width", 1);
+
+var innerProductY = -1
+
+var xProd = svg.append("line")
+.attr("x1", xScale(0)).attr("y1", yScale(innerProductY))
+.attr("x2", xScale(a.x * b.x))
+.attr("y2", yScale(innerProductY))
+.style("stroke", signColor(a.x * b.x))
+.style("opacity", 0.9)
+.style("stroke-width", 20);
+
+var yProd = svg.append("line")
+.attr("x1", xScale(a.x * b.x))
+.attr("y1", yScale(innerProductY)+20)
+.attr("x2", xScale(a.x * b.x + a.y * b.y))
+.attr("y2", yScale(innerProductY)+20)
+.style("stroke", signColor(a.y * b.y))
+.style("opacity", 0.9)
+.style("stroke-width", 20);
+
+function signColor(x) {
+	if (x > 0.0) { return "#ccc"; }
+	else { return "#faa"; }
+}
+
+svg.on("click", function() {
+	var mouseXY = d3.mouse(this);
+	b.x = xScale.invert(mouseXY[0]);
+	b.y = yScale.invert(mouseXY[1]);
+
+	bLine.attr("x2", xScale(b.x)).attr("y2", yScale(b.y));
+
+	bLineHoriz.attr("x2", xScale(b.x)).attr("y2", yScale(0));
+
+	bLineVert.attr("x1", xScale(b.x)).attr("y1", yScale(0))
+	.attr("x2", xScale(b.x)).attr("y2", yScale(b.y));
+
+	xProd.attr("x2", xScale(a.x * b.x))
+	.style("stroke", signColor(a.x * b.x));
+	yProd.attr("x1", xScale(a.x * b.x))
+	.style("stroke", signColor(a.y * b.y))
+	.attr("x2", xScale(a.x * b.x + a.y * b.y));
+
+});
+
+svg.on("mousemove", function() {
+	var mouseXY = d3.mouse(this);
+	a.x = xScale.invert(mouseXY[0]);
+	a.y = yScale.invert(mouseXY[1]);
+
+	aLine.attr("x2", xScale(a.x)).attr("y2", yScale(a.y));
+
+	aLineHoriz.attr("x2", xScale(a.x)).attr("y2", yScale(0));
+
+	aLineVert.attr("x1", xScale(a.x)).attr("y1", yScale(0))
+	.attr("x2", xScale(a.x)).attr("y2", yScale(a.y));
+
+	xProd.attr("x2", xScale(a.x * b.x))
+	.style("stroke", signColor(a.x * b.x));
+	yProd.attr("x1", xScale(a.x * b.x))
+	.style("stroke", signColor(a.y * b.y))
+	.attr("x2", xScale(a.x * b.x + a.y * b.y));
+
+});
+
+</script>
+
+</body>
+</html>
