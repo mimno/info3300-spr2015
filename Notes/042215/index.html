@@ -1,0 +1,237 @@
+<html>
+<head>
+<!-- Load the d3 library. -->
+<script src="http://d3js.org/d3.v3.min.js" charset="utf-8"></script>
+<link href='http://fonts.googleapis.com/css?family=Open+Sans' rel='stylesheet' type='text/css'>
+<style>
+body { font-family: "Open Sans"; }
+svg { border: solid black 1px; }
+.bar rect { fill: #ccc; }
+.axis path { fill: none; stroke: black;}
+.axis line { stroke: black; }
+.axis text { font-size: x-small; }
+.brush .extent {
+  stroke: #fff;
+  fill-opacity: .125;
+  shape-rendering: crispEdges;
+}
+
+</style>
+</head>
+<body>
+
+<h3>Prompt for Wed, Apr 22. Many <a href="http://en.wikipedia.org/wiki/Simple_linear_regression">Simple Linear Regression</a>s. Bootstrapping</h3>
+
+<p>Previously we've been looking at population growth with respect to another variable from the USDA atlas of rural America. Today I'd like to look at county-level data from a different source, USGS water consumption data. I want to look at each state separately, and decide whether they are different. We have two objectives: load two separate data files, and get some kind of confidence measurement about each regression.</p>
+
+<div id="plot"></div>
+
+<script>
+
+var stateGrid = {
+"ME" : { "state": "ME", "row": 0, "col": 10 },
+"WI" : { "state": "WI", "row": 1, "col": 5 },
+"VT" : { "state": "VT", "row": 1, "col": 9 },
+"NH" : { "state": "NH", "row": 1, "col": 10 },
+"WA" : { "state": "WA", "row": 2, "col": 0 },
+"ID" : { "state": "ID", "row": 2, "col": 1 },
+"MT" : { "state": "MT", "row": 2, "col": 2 },
+"ND" : { "state": "ND", "row": 2, "col": 3 },
+"MN" : { "state": "MN", "row": 2, "col": 4 },
+"IL" : { "state": "IL", "row": 2, "col": 5 },
+"MI" : { "state": "MI", "row": 2, "col": 6 },
+"NY" : { "state": "NY", "row": 2, "col": 8 },
+"MA" : { "state": "MA", "row": 2, "col": 9 },
+"OR" : { "state": "OR", "row": 3, "col": 0 },
+"NV" : { "state": "NV", "row": 3, "col": 1 },
+"WY" : { "state": "WY", "row": 3, "col": 2 },
+"SD" : { "state": "SD", "row": 3, "col": 3 },
+"IA" : { "state": "IA", "row": 3, "col": 4 },
+"IN" : { "state": "IN", "row": 3, "col": 5 },
+"OH" : { "state": "OH", "row": 3, "col": 6 },
+"PA" : { "state": "PA", "row": 3, "col": 7 },
+"NJ" : { "state": "NJ", "row": 3, "col": 8 },
+"CT" : { "state": "CT", "row": 3, "col": 9 },
+"RI" : { "state": "RI", "row": 3, "col": 10 },
+"CA" : { "state": "CA", "row": 4, "col": 0 },
+"UT" : { "state": "UT", "row": 4, "col": 1 },
+"CO" : { "state": "CO", "row": 4, "col": 2 },
+"NE" : { "state": "NE", "row": 4, "col": 3 },
+"MO" : { "state": "MO", "row": 4, "col": 4 },
+"KY" : { "state": "KY", "row": 4, "col": 5 },
+"WV" : { "state": "WV", "row": 4, "col": 6 },
+"VA" : { "state": "VA", "row": 4, "col": 7 },
+"MD" : { "state": "MD", "row": 4, "col": 8 },
+"DE" : { "state": "DE", "row": 4, "col": 9 },
+"AZ" : { "state": "AZ", "row": 5, "col": 1 },
+"NM" : { "state": "NM", "row": 5, "col": 2 },
+"KS" : { "state": "KS", "row": 5, "col": 3 },
+"AR" : { "state": "AR", "row": 5, "col": 4 },
+"TN" : { "state": "TN", "row": 5, "col": 5 },
+"NC" : { "state": "NC", "row": 5, "col": 6 },
+"SC" : { "state": "SC", "row": 5, "col": 7 },
+"OK" : { "state": "OK", "row": 6, "col": 3 },
+"LA" : { "state": "LA", "row": 6, "col": 4 },
+"MS" : { "state": "MS", "row": 6, "col": 5 },
+"AL" : { "state": "AL", "row": 6, "col": 6 },
+"GA" : { "state": "GA", "row": 6, "col": 7 },
+"HI" : { "state": "HI", "row": 7, "col": 0 },
+"AK" : { "state": "AK", "row": 7, "col": 1 },
+"TX" : { "state": "TX", "row": 7, "col": 3 },
+"FL" : { "state": "FL", "row": 7, "col": 8 }
+};
+
+var selectedStates = {};
+
+var xScale, yScale, xDomain, yDomain;
+
+var usdaData, usgsData;
+var points;
+
+var circles;
+var regressionLine;
+
+var height = 500;
+var width = 750;
+var stateWidth = 60;
+var gap = 2;
+
+var svg = d3.select("#plot").append("svg")
+.attr("height", height)
+.attr("width", width);
+
+var stateGroup = svg.append("g");
+var stateXScale = d3.scale.linear().domain([0,11]).range([0, 11 * (stateWidth + gap)]);
+var stateYScale = d3.scale.linear().domain([0,7]).range([0, 7 * (stateWidth + gap)]);
+
+var stateWidth = stateXScale(1) - 2;
+
+var stateIDs = Object.getOwnPropertyNames(stateGrid);
+
+var stateGroups = stateGroup.selectAll("g").data(stateIDs)
+.enter().append("g")
+.attr("id", function (stateID) { return "state-" + stateID; })
+.attr("transform", function (stateID) { return "translate(" + stateXScale(stateGrid[stateID].col) + "," + stateYScale(stateGrid[stateID].row) + ")"; });
+
+stateGroups.append("text")
+.style("font-size", "xx-large")
+.style("pointer-events", "none")
+.attr("y", stateWidth - 2)
+.style("fill", "#ccc")
+.text(function (d) { return d; });
+
+var stateRects = stateGroups.append("rect")
+.attr("width", stateWidth).attr("height", stateWidth)
+.attr("opacity", 0.05);
+
+
+function getModel (activePoints) {	
+	var model = {};
+
+	var meanX = d3.mean(activePoints, function (d) { 
+		return d.x;
+	});
+
+	var meanY = d3.mean(activePoints, function (d) { 
+		return d.y;
+	});
+
+	model.slope = d3.sum(activePoints, function (d) {
+		return (d.x - meanX) * (d.y - meanY);
+	});
+
+	model.slope /= d3.sum(activePoints, function (d) {
+		return (d.x - meanX) * (d.x - meanX);
+	});
+
+	model.intercept = meanY - model.slope * meanX;
+	
+	return model;
+}
+
+console.log("getting data");
+d3.csv("usda-atlas-people.csv", function (error, rows) {
+	usdaData = d3.map(rows, function (d) { return d.FIPS; });
+	console.log("got USDA");
+	d3.tsv("water.tsv", function (error, rows) {
+		usgsData = d3.map(rows, function (d) { return d.FIPS; });
+		console.log("got USGS");
+		init();
+	});
+	
+});
+
+console.log("sent requests");
+
+function init() {
+	
+	var usdaCounties = usdaData.keys().filter(function (county) { return usgsData.has(county); });
+	
+	points = usdaCounties.map(function (county) {
+		var usda = usdaData.get(county);
+		var usgs = usgsData.get(county);
+		return { 
+			state: usda.State, FIPS: county, x: Number(usda.PopChangeRate1013), y: Number(usgs["DO-TOTAL"])
+		};
+	});
+
+	xDomain = d3.extent(points, function (d) {return d.x; });
+	yDomain = d3.extent(points, function (d) {return d.y; });
+
+	xScale = d3.scale.linear().domain(xDomain).range([0, stateWidth]);
+	
+	yScale = d3.scale.linear().domain(yDomain).range([stateWidth, 0]);
+
+	stateIDs.forEach(function (state, i) {
+		var statePoints = points.filter(function(d) { return d.state == state; });
+		var stateGroup = d3.select("#state-" + state);
+
+		stateGroup.selectAll("circle").data(statePoints).enter()
+		.append("circle")
+		.style("opacity", 0.5)
+		.attr("cx", function (d) { return xScale(d.x); })
+		.attr("cy", function (d) { return yScale(d.y); })
+		.attr("r", 2);
+		
+		var model = getModel(statePoints);
+		regressionLine = stateGroup.append("line")
+		.attr("x1", xScale(xDomain[0]))
+		.attr("y1", yScale(model.slope * xDomain[0] + model.intercept))
+		.attr("x2", xScale(xDomain[1]))
+		.attr("y2", yScale(model.slope * xDomain[1] + model.intercept))
+		.style("stroke", "#0000FF")
+		.style("stroke-width", 3)
+		.style("opacity", 0.3);
+	});
+}
+
+function bootstrap() {
+	stateIDs.forEach(function (state, i) {
+		var realPoints = points.filter(function(d) { return d.state == state; });
+		
+		var resampledPoints = [];
+		for (var i = 0; i < realPoints.length; i++) {
+			// Add a randomly selected point, with replacement
+			resampledPoints.push( realPoints[ Math.floor(Math.random() * realPoints.length) ] );
+		}
+		
+		var stateGroup = d3.select("#state-" + state);
+		
+		var model = getModel(resampledPoints);
+		
+		stateGroup.append("line")
+		.attr("class", "fakeRegression")
+		.attr("x1", xScale(xDomain[0]))
+		.attr("y1", yScale(model.slope * xDomain[0] + model.intercept))
+		.attr("x2", xScale(xDomain[1]))
+		.attr("y2", yScale(model.slope * xDomain[1] + model.intercept))
+		.style("stroke", "#777")
+		.style("stroke-width", 2)
+		.style("opacity", 0.3);
+	});
+}
+
+</script>
+
+</body>
+</html>
