@@ -1,0 +1,234 @@
+<html>
+<head>
+<!-- Load the d3 library. -->
+<script src="http://d3js.org/d3.v3.min.js" charset="utf-8"></script>
+<link href='http://fonts.googleapis.com/css?family=Source+Sans+Pro:400,900' rel='stylesheet' type='text/css'>
+<link href='http://fonts.googleapis.com/css?family=Open+Sans' rel='stylesheet' type='text/css'>
+<style>
+body { font-family: "Open Sans"; }
+svg { border: solid black 1px; }
+.bar rect { fill: #ccc; }
+.axis path { fill: none; stroke: black;}
+.axis line { stroke: black; }
+.axis text { font-size: x-small; }
+.brush .extent {
+  stroke: #fff;
+  fill-opacity: .125;
+  shape-rendering: crispEdges;
+}
+
+</style>
+</head>
+<body>
+
+<h3>Notes for Mon, May 4. Summary, and a running example.</h3>
+
+<p>For this class we will be summarizing what we did this semester, using a timely example: can we detect any change in marriage rates due to same-sex marriage policies? Data is from <a href="http://www.cdc.gov/nchs/data/dvs/state_marriage_rates_90_95_and_99-12.pdf">the CDC</a>. Dates of same-sex marriage legalization are from <a href="http://gaymarriage.procon.org/view.resource.php?resourceID=004857">ProCon.org</a>. It's hard to find <a href="http://www.pewresearch.org/fact-tank/2013/06/26/how-many-same-sex-marriages-in-the-u-s-at-least-71165-probably-more/">how many of these marriages are same-sex</a> according to Pew Research, which makes it difficult to see if increases in same-sex marriage are masking decreases in opposite-sex marriages.</p>
+
+<div id="plot"></div>
+
+<script>
+
+var xScale, yScale, xDomain, yDomain;
+
+var marriageData;
+var points;
+
+var circles;
+var regressionLine;
+
+var height = 800;
+var width = 500;
+var padding = 50;
+
+var svg = d3.select("#plot").append("svg")
+.attr("height", height)
+.attr("width", width);
+
+var years = [1990, 1995, 1999, 2000, 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010, 2011, 2012];
+
+var stateName = svg.append("text")
+.attr("x", width / 2).attr("y", height - 2 * padding)
+.style("font-family", "Source Sans Pro")
+.style("font-size", "160pt")
+.style("font-weight", "bold")
+.style("opacity", 0.08)
+.style("text-anchor", "middle");
+
+xScale = d3.scale.linear().domain([1990, 2012]).range([padding, width - padding]);
+yScale = d3.scale.linear().domain([0, 15]).range([height - padding, padding]);
+
+var xAxis = d3.svg.axis().scale(xScale).tickValues(d3.range(1990, 2015, 5)).tickFormat(function (d) { return d; });
+svg.append("g")
+  .attr("class", "axis")
+  .attr("transform", "translate(0, " + (height - padding) + ")")
+  .call(xAxis);
+
+var yAxis = d3.svg.axis().scale(yScale).orient("left");
+svg.append("g")
+        .attr("class", "axis")
+        .attr("transform", "translate(" + (padding) + ", 0)")
+        .call(yAxis);
+
+
+function legalizationLine(year, states) {
+	svg.append("line")
+	.attr("x1", xScale(year))
+	.attr("x2", xScale(year))
+	.attr("y1", yScale(0))
+	.attr("y2", yScale(100))
+	.style("stroke", "green")
+	.style("stroke-dasharray", "5,5");
+
+	states.forEach(function (state, i){
+		svg.append("text")
+		.attr("x", xScale(year))
+		.attr("y", 20 * (i+1))
+		.style("fill", "green")
+		.style("font-size", "x-small")
+		.text(state);		
+	});
+}
+
+legalizationLine(2004, ["MA"]);
+legalizationLine(2008, ["CT"]);
+legalizationLine(2009, ["IA", "VT"]);
+legalizationLine(2010, ["NH", "DC"]);
+legalizationLine(2011, ["NY"]);
+
+
+var legalizations = { "MA": 2004, "CT": 2008, "IA": 2009, "VT": 2009, 
+		"NH": 2010, "NY": 2011, "DC": 2010 };
+
+function getModel (activePoints) {	
+	var model = {};
+
+	var meanX = d3.mean(activePoints, function (d) { 
+		return d.x;
+	});
+
+	var meanY = d3.mean(activePoints, function (d) { 
+		return d.y;
+	});
+
+	model.slope = d3.sum(activePoints, function (d) {
+		return (d.x - meanX) * (d.y - meanY);
+	});
+
+	model.slope /= d3.sum(activePoints, function (d) {
+		return (d.x - meanX) * (d.x - meanX);
+	});
+
+	model.intercept = meanY - model.slope * meanX;
+	
+	return model;
+}
+
+
+d3.csv("marriages.csv", function (error, rows) {
+	marriageData = rows;
+	
+	var toArray = function (stateData) {
+		return years.map(function (year) { return { "year": year, "marriages": Number(stateData[year]) } });
+	};
+	
+	var pathGenerator = d3.svg.line()
+	.x(function (d, i) { return xScale(d.year); })
+	.y(function (d, i) { return yScale(d.marriages); })
+	.defined(function(d) { return !isNaN(d.marriages); });
+	
+	svg.selectAll("path").data(marriageData).enter()
+	.append("path")
+	.attr("class", "stateline")
+	.attr("id", function (d) {return "state-" + d.State; })
+	.attr("d", function (d) { return pathGenerator(toArray(d)); })
+	.style("fill", "none")
+	.style("stroke-width", 2)
+	.style("opacity", 0.3)
+	.style("stroke", function(d) {
+		console.log(d);
+		if (legalizations[d.State]) {
+			return "blue";
+		}
+		else {
+			return "black";
+		}
+	})
+	.on("mouseover", function (d) {
+		stateName.text(d.State);
+		svg.selectAll("path.stateline").style("stroke-width", 2);
+		svg.select("path#state-" + d.State).style("stroke-width", 4);
+	});
+	
+
+	
+/*
+	points = usdaCounties.map(function (county) {
+		var usda = usdaData.get(county);
+		var usgs = usgsData.get(county);
+		return { 
+			state: usda.State, FIPS: county, x: Number(usda.PopChangeRate1013), y: Number(usgs["DO-TOTAL"])
+		};
+	});
+
+	xDomain = d3.extent(points, function (d) {return d.x; });
+	yDomain = d3.extent(points, function (d) {return d.y; });
+
+	xScale = d3.scale.linear().domain(xDomain).range([0, stateWidth]);
+	
+	yScale = d3.scale.linear().domain(yDomain).range([stateWidth, 0]);
+
+	stateIDs.forEach(function (state, i) {
+		var statePoints = points.filter(function(d) { return d.state == state; });
+		var stateGroup = d3.select("#state-" + state);
+
+		stateGroup.selectAll("circle").data(statePoints).enter()
+		.append("circle")
+		.style("opacity", 0.5)
+		.attr("cx", function (d) { return xScale(d.x); })
+		.attr("cy", function (d) { return yScale(d.y); })
+		.attr("r", 2);
+		
+		var model = getModel(statePoints);
+		regressionLine = stateGroup.append("line")
+		.attr("x1", xScale(xDomain[0]))
+		.attr("y1", yScale(model.slope * xDomain[0] + model.intercept))
+		.attr("x2", xScale(xDomain[1]))
+		.attr("y2", yScale(model.slope * xDomain[1] + model.intercept))
+		.style("stroke", "#0000FF")
+		.style("stroke-width", 3)
+		.style("opacity", 0.3);
+	});
+*/
+});
+
+function bootstrap() {
+	stateIDs.forEach(function (state, i) {
+		var realPoints = points.filter(function(d) { return d.state == state; });
+		
+		var resampledPoints = [];
+		for (var i = 0; i < realPoints.length; i++) {
+			// Add a randomly selected point, with replacement
+			resampledPoints.push( realPoints[ Math.floor(Math.random() * realPoints.length) ] );
+		}
+		
+		var stateGroup = d3.select("#state-" + state);
+		
+		var model = getModel(resampledPoints);
+		
+		stateGroup.append("line")
+		.attr("class", "fakeRegression")
+		.attr("x1", xScale(xDomain[0]))
+		.attr("y1", yScale(model.slope * xDomain[0] + model.intercept))
+		.attr("x2", xScale(xDomain[1]))
+		.attr("y2", yScale(model.slope * xDomain[1] + model.intercept))
+		.style("stroke", "#777")
+		.style("stroke-width", 2)
+		.style("opacity", 0.3);
+	});
+}
+
+</script>
+
+</body>
+</html>
