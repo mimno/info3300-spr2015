@@ -149,6 +149,21 @@ function getModel (activePoints) {
 	return model;
 }
 
+// Asynchronous requests are challenging. When we load a file through 
+//  AJAX calls (like d3.csv()), Javascript will submit the request and 
+//  then immediately execute the next line of code without waiting 
+//  for the file to load. The callback function that we pass to d3.csv
+//  is the only way we can execute code that is guaranteed to happen
+//  after the file is available.
+// But what if we need more than one file? We can't guarantee which
+//  one will be available first. In class we talked about different ways
+//  to condition our code on the presence of both of two input files.
+// Here's one solution: nest the callback functions. This is effective, but
+//  not ideal -- we can't load the files in parallel, and the code will
+//  get ugly and confusing if we need more than two or three files.
+// Another suggestion is to keep track of how many files we have finished
+//  loading, and then call our init() function when everything is done.
+
 console.log("getting data");
 d3.csv("usda-atlas-people.csv", function (error, rows) {
 	usdaData = d3.map(rows, function (d) { return d.FIPS; });
@@ -160,7 +175,6 @@ d3.csv("usda-atlas-people.csv", function (error, rows) {
 	});
 	
 });
-
 console.log("sent requests");
 
 function init() {

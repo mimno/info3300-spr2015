@@ -47,7 +47,10 @@ var gaussian = d3.random.normal();
 
 function generateLinear(slope, intercept, noise) {
 	var x = gaussian();
-	var y = x * slope + intercept + noise * gaussian();
+	// Deterministic part
+	var y = x * slope + intercept + 
+		// stochastic part
+		noise * gaussian();
 	
 	return { x: x, y: y };
 }
@@ -55,9 +58,9 @@ function generateLinear(slope, intercept, noise) {
 var points = [];
 
 for (var i = 0; i < 100; i++) {
-	points.push(generateLinear(0.5, 1.0, 0.3));
+	points.push(generateLinear(0.2, -1.2,
+		 1.3));
 }
-
 var circles = svg.selectAll("circle").data(points).enter()
 .append("circle")
 .attr("cx", function (d) { return xScale(d.x); })
@@ -69,8 +72,23 @@ var circles = svg.selectAll("circle").data(points).enter()
 	
 var model = {};
 
+var meanX = d3.mean(points, function (d) { 
+	return d.x;
+});
 
+var meanY = d3.mean(points, function (d) { 
+	return d.y;
+});
 
+model.slope = d3.sum(points, function (d) {
+	return (d.x - meanX) * (d.y - meanY);
+});
+
+model.slope /= d3.sum(points, function (d) {
+	return (d.x - meanX) * (d.x - meanX);
+});
+
+model.intercept = meanY - model.slope * meanX;
 	
 var regressionLine = svg.append("line")
 .attr("x1", xScale(-3))
